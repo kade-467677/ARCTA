@@ -1,0 +1,128 @@
+:root {
+    --arcta-navy: #24364b;
+    --arcta-navy-dark: #182738;
+    --arcta-accent: #2f7d75;
+    --arcta-sidebar-text: #eef4f7;
+    --arcta-sidebar-muted: #b9c6cf;
+}
+
+.workflow-nav { background: var(--arcta-navy); }
+.workflow-nav::before {
+    content: "ARCTA";
+    color: white;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 8px 12px 18px;
+}
+.workflow-nav a,
+.workflow-nav a.step-link {
+    color: var(--arcta-sidebar-text);
+    background: transparent;
+    border-color: transparent;
+}
+.workflow-nav a:hover { background: rgba(255, 255, 255, 0.09); }
+.workflow-nav a.active {
+    background: var(--arcta-accent);
+    border-color: var(--arcta-accent);
+    color: white;
+}
+.workflow-nav a.disabled {
+    color: var(--arcta-sidebar-muted);
+    opacity: 0.48;
+}
+
+@media (min-width: 980px) {
+    body.workflow-page main,
+    body.home-page main {
+        max-width: 1320px;
+        margin-left: 240px;
+        margin-right: auto;
+    }
+    .workflow-nav {
+        position: fixed;
+        z-index: 20;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 7px;
+        margin: 0;
+        padding: 22px 14px;
+        border-radius: 0;
+        box-shadow: 4px 0 18px rgba(24, 39, 56, 0.16);
+    }
+    .workflow-nav a,
+    .workflow-nav a.step-link {
+        display: block;
+        min-height: 0;
+        padding: 10px 12px;
+        border-radius: 7px;
+        text-decoration: none;
+    }
+    .workflow-nav a.step-link strong { margin-bottom: 2px; }
+}
+
+/* 64G1 — repères visuels ARCTA */
+body{--step:#175a85;--step-bg:#edf5fb;color:#172d40;background:#edf1f5}
+body:has(.workflow-nav a.active[href$="/config"]){--step:#17634e;--step-bg:#edf8f3}
+body:has(.workflow-nav a.active[href$="/mapping"]){--step:#175a85;--step-bg:#edf5fb}
+body:has(.workflow-nav a.active[href$="/diag"]){--step:#684095;--step-bg:#f4effa}
+body:has(.workflow-nav a.active[href$="/campaign"]){--step:#874912;--step-bg:#fff5e9}
+.workflow-nav a.active{background:#fff!important;color:#142c40!important;border-left:6px solid var(--step)!important;font-weight:700}
+main>h1{border-left:7px solid var(--step);background:var(--step-bg);padding:12px 18px;border-radius:6px}
+.card,.panel{border-top:4px solid var(--step)!important;border-color:#b7c5d0}
+h2{color:var(--step)}th{background:#dce5ed!important;color:#172d40}
+td{border-bottom-color:#b7c5d0}button,.button{min-height:40px;font-weight:600}
+button.primary,.button.primary{background:var(--step)!important;color:#fff!important}
+:where(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #111827;outline-offset:3px;box-shadow:0 0 0 6px #fff}
+#analysis-settings{background:var(--step-bg)}#analysis-settings summary{cursor:pointer;font-weight:700;padding:10px}
+#analysis-settings-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+
+/* 64G2 — navigation commune et actions persistantes */
+.workflow-nav a,.workflow-nav a.step-link,.workflow-nav span.disabled{display:block!important;box-sizing:border-box;min-height:0!important;padding:12px!important;border:0!important;border-left:12px solid transparent!important;border-radius:7px!important;background:transparent!important;color:#eef4f7!important;text-decoration:none!important;font-size:15px!important}
+.workflow-nav a.active{background:#fff!important;color:var(--step)!important;border-left:12px solid var(--step)!important;font-weight:700}
+.workflow-nav .disabled{color:#b9c6cf!important;opacity:.65;cursor:default}
+.workflow-nav a:not(.active):not(.disabled):hover{background:#ffffff18!important}
+.workflow-nav strong{font-size:inherit!important}
+.arcta-bottom-bar{position:sticky;bottom:0;z-index:30;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;margin-top:24px;padding:16px;background:#fff;border:1px solid #b7c5d0;border-top:4px solid var(--step);box-shadow:0 -5px 18px #172d4026;border-radius:8px}
+.output-paths{width:100%;table-layout:fixed}.output-paths th{width:190px;text-align:left;vertical-align:top}.output-paths td{overflow-wrap:anywhere;padding:12px}.output-paths input{min-width:0}
+@media(max-width:600px){.output-paths th{width:120px}.arcta-bottom-bar{padding:10px;gap:8px}.arcta-bottom-bar button{flex:1}}
+
+body:has(.arcta-bottom-bar){padding-bottom:115px}html{scroll-padding-bottom:130px}
+.arcta-bottom-bar{position:fixed;left:20px;right:20px;bottom:12px;margin-top:0}
+@media(min-width:980px){.arcta-bottom-bar{left:260px;right:24px}}
+@media(max-width:600px){body:has(.arcta-bottom-bar){padding-bottom:180px}.arcta-bottom-bar{left:8px;right:8px;bottom:6px}}
+
+/* Barres d’actions alignées sur les panneaux du contenu */
+.arcta-bottom-bar {
+    box-sizing: border-box;
+    left: 28px;
+    right: auto;
+    width: calc(100% - 56px);
+    max-width: 1264px;
+}
+
+@media (min-width: 980px) {
+    .arcta-bottom-bar {
+        left: 268px;
+        width: calc(100% - 296px);
+    }
+}
+
+@media (max-width: 760px) {
+    body.workflow-page .arcta-bottom-bar {
+        left: 14px;
+        width: calc(100% - 28px);
+    }
+}
+
+@media (max-width: 700px) {
+    body.home-page .arcta-bottom-bar {
+        left: 14px;
+        width: calc(100% - 28px);
+    }
+}

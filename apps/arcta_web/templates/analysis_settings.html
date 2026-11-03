@@ -1,0 +1,24 @@
+<details class="card panel" id="analysis-settings" data-session-id="{{ session_id }}">
+    <summary style="cursor:pointer;font-weight:600">
+        Paramètres avancés — statistiques, recalculs et autofrein
+        <span id="analysis-settings-mode" style="font-weight:400">Chargement…</span>
+    </summary>
+    <p>Ces paramètres de calcul s'appliquent à la prochaine exécution de cette campagne.
+       La CONFIG, le mapping et la revue DIAG restent validés.
+       Les exécutions déjà lancées conservent leurs propres paramètres.</p>
+    <p>K&amp;K géométrique : demi-angle du filet et géométrie d’appui issus de CONFIG.
+       Autofrein : estimation au vissage sur [A0−1080° ; A0−360°]. L’engagement complet
+       du frein doit être assuré par le protocole. Un ancien DIAG doit être relancé
+       avant d’activer la soustraction ; une valeur manquante ne vaut jamais zéro.</p>
+    <form id="analysis-settings-form">
+        <div class="grid" id="analysis-settings-fields"></div>
+        <p>La tolérance est évaluée à chaque position entre essais indépendants.
+           Si l'effectif ne permet pas d'atteindre l'objectif non paramétrique,
+           l'enveloppe est interrompue avec une explication dans les résultats.</p>
+        <p id="analysis-settings-requirement"></p>
+        <button type="submit" id="analysis-settings-save" disabled>Enregistrer les paramètres</button>
+        <button type="button" id="analysis-settings-reset" disabled>Restaurer les valeurs par défaut</button>
+        <button type="button" id="analysis-settings-reload">Recharger les paramètres enregistrés</button>
+    </form>
+    <p id="analysis-settings-status" role="status" aria-live="polite"></p>
+</details>
