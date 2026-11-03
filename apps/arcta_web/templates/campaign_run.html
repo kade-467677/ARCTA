@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ARCTA — Exécution de campagne</title>
+    <style>
+        :root {
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            background: #f4f6f8;
+            color: #20252b;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+        h1 { margin: 0 0 4px; }
+        h2 { margin-top: 0; font-size: 1.15rem; }
+        .subtitle, .muted { color: #5b6570; }
+        .subtitle { margin-top: 0; }
+        .card {
+            background: white;
+            border: 1px solid #dce1e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+        .toolbar, .summary-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+        label { display: grid; gap: 5px; font-weight: 700; }
+        select, button, a.button { font: inherit; min-height: 40px; }
+        select {
+            min-width: 330px;
+            max-width: 100%;
+            border: 1px solid #aeb7c0;
+            border-radius: 6px;
+            padding: 7px 10px;
+            background: white;
+        }
+        input[type="text"] {
+            min-height: 40px;
+            width: min(720px, 100%);
+            border: 1px solid #aeb7c0;
+            border-radius: 6px;
+            padding: 7px 10px;
+            font: inherit;
+        }
+        button, a.button {
+            border: 1px solid #aeb7c0;
+            border-radius: 6px;
+            padding: 8px 14px;
+            background: white;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        button.primary { background: #24364b; color: white; border-color: #24364b; }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .status {
+            padding: 11px 13px;
+            border-radius: 6px;
+            margin-top: 14px;
+            background: #eef1f4;
+        }
+        .status.ok { background: #e8f4eb; }
+        .status.warning { background: #fff5dd; }
+        .status.error { background: #fbe9e9; }
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-weight: 700;
+            background: #e9edf1;
+        }
+        .pill.running, .pill.pending { background: #ffedbd; }
+        .pill.succeeded { background: #dff1e4; }
+        .pill.failed { background: #f7dcdc; }
+        .summary {
+            min-width: 185px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f1f3f5;
+        }
+        .summary strong { display: block; margin-bottom: 4px; }
+        progress { width: 100%; height: 22px; margin-top: 12px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td {
+            text-align: left;
+            border-bottom: 1px solid #e2e6ea;
+            padding: 9px 8px;
+            vertical-align: top;
+        }
+        th { background: #f6f7f8; }
+        .error-code { font-family: Consolas, monospace; font-weight: 700; }
+        .plot-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+        .plot-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 14px;
+            margin-top: 12px;
+        }
+        .plot-mode { margin:18px 0; padding:14px; border:1px solid #adc4d7;
+            border-left:8px solid #216296; border-radius:8px; background:#edf5fc; }
+        .plot-mode.effective { border-color:#c7a4c0; border-left-color:#8a427e; background:#faf0f8; }
+        .plot-mode summary { cursor:pointer; font-weight:700; font-size:1.1rem; padding:8px; }
+        .run-delete { color:#a11919; border:1px solid #a11919; background:white; }
+        .run-actions { display:flex; gap:16px; justify-content:space-between; align-items:center;
+            flex-wrap:wrap; padding:10px 0; }
+        .run-actions span { overflow-wrap:anywhere; }
+        .plot-card {
+            margin: 0;
+            border: 1px solid #dce1e6;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fafbfc;
+        }
+        .plot-card img { width: 100%; height: auto; display: block; }
+        .plot-card figcaption { margin-top: 8px; font-weight: 700; }
+        .report-options {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #dce1e6;
+        }
+        .report-options h3 { margin: 0 0 12px; }
+        .preset-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+        .option-fieldset {
+            margin: 14px 0 0;
+            border: 1px solid #dce1e6;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .option-fieldset legend { padding: 0 6px; font-weight: 800; }
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 8px 14px;
+        }
+        label.check-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .poly-mode { margin-top: 12px; }
+        .hidden { display: none; }
+        .busy { cursor: progress; }
+        @media (max-width: 760px) {
+            main { padding: 14px; }
+            select { min-width: 100%; }
+            .summary { min-width: 100%; }
+        }
+
+        .workflow-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .workflow-nav a { padding: 8px 12px; border: 1px solid #aeb7c0; border-radius: 6px; background: white; color: #20252b; text-decoration: none; }
+        .workflow-nav a.active { background: #24364b; border-color: #24364b; color: white; }
+    </style>
+    <link rel="stylesheet" href="/static/arcta.css">
+</head>
+<body class="workflow-page">
+<main>
+    <nav class="workflow-nav" aria-label="Parcours campagne">
+        <a href="/">Accueil</a>
+        <a href="/sessions/{{ session_id }}/config">CONFIG</a>
+        <a href="/sessions/{{ session_id }}/mapping">Mapping</a>
+        <a href="/sessions/{{ session_id }}/diag">DIAG</a>
+        <a class="active" href="/sessions/{{ session_id }}/campaign">Exécution</a>
+    </nav>
+    <h1>Exécution de campagne ARCTA</h1>
+    <p class="subtitle">
+        {{ source_count }} source(s) dans la session. La CONFIG, le mapping et
+        la revue DIAG sont contrôlés côté serveur avant chaque lancement.
+    </p>
+
+    {% include "analysis_settings.html" %}
+    <section class="card">
+        <h2>Dossiers des résultats</h2>
+        <table class="output-paths"><tbody>
+            <tr><th scope="row">Origine des essais</th><td id="source-origin" data-path-only="1">Chargement…</td></tr>
+            <tr><th scope="row">Résultats centralisés</th><td id="output-central-root" data-path-only="1">Chargement…</td></tr>
+            <tr><th scope="row"><label for="output-source-directory">Copie locale</label></th><td>
+                <input id="output-source-directory" type="text" style="width:100%;box-sizing:border-box" aria-label="Dossier de la copie locale">
+                <button id="choose-output-directory" type="button" hidden>Choisir un autre dossier</button>
+            </td></tr>
+        </tbody></table>
+        <div id="output-location-results" role="status" aria-live="polite"></div>
+    </section>
+
+
+    <section class="card">
+        <h2>Préparation et lancement</h2>
+            <p>Chaque analyse calcule les deux modes : couple total (autofrein inclus) et couple effectif (autofrein déduit par essai). Le profil DIAG/CONCAT seul ne calcule pas ces relations.</p>
+        <div class="toolbar">
+            <label for="profile-select">
+                Profil d'exécution
+                <select id="profile-select">
+                    {% for profile, label in profile_options %}
+                    <option value="{{ profile }}"{% if profile == default_profile %} selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+<!-- 64G2: actions de lancement en bas -->
+        </div>
+        <div id="readiness-status" class="status" role="status" aria-live="polite">Vérification des prérequis…</div>
+        <div id="report-options-panel" class="report-options">
+            <h3>Contenu du rapport PDF</h3>
+            <p class="muted">
+                Le titre, les graphes et les polynômes sélectionnés seront figés
+                avec le run. Les seuils d'écart V5 sont 1 %, 2,5 %, 5 % et 10 %.
+            </p>
+            <label for="report-title">
+                Titre libre du rapport
+                <input id="report-title" type="text" maxlength="180"
+                       value="Rapport ARCTA - essais couple tension">
+            </label>
+            <div class="preset-actions">
+                <button id="preset-synthetic" type="button">Rapport synthétique</button>
+                <button id="preset-complete" type="button">Rapport complet</button>
+                <span id="preset-label" class="pill">Synthétique</span>
+            </div>
+
+            <fieldset class="option-fieldset">
+                <legend>Blocs du rapport</legend>
+                <div class="option-grid">
+                    {% for key, label in report_section_options %}
+                    <label class="check-option">
+                        <input class="report-section" type="checkbox" value="{{ key }}" checked>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <fieldset class="option-fieldset">
+                <legend>Graphes à générer et exporter</legend>
+                <div class="option-grid">
+                    {% for key, label in report_graph_options %}
+                    <label class="check-option">
+                        <input class="report-graph" type="checkbox" value="{{ key }}"
+                               {% if key in synthetic_graph_keys %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <fieldset class="option-fieldset">
+                <legend>Familles de polynômes</legend>
+                <div class="option-grid">
+                    {% for key, label in poly_type_options %}
+                    <label class="check-option">
+                        <input class="poly-type" type="checkbox" value="{{ key }}"
+                               {% if key in default_poly_types %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <fieldset class="option-fieldset">
+                <legend>Statistiques polynomiales</legend>
+                <div class="option-grid">
+                    {% for key, label in poly_stat_options %}
+                    <label class="check-option">
+                        <input class="poly-stat" type="checkbox" value="{{ key }}"
+                               {% if key in default_poly_stats %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <label class="poly-mode" for="poly-columns-mode">
+                    Colonnes du tableau de coefficients
+                    <select id="poly-columns-mode">
+                        <option value="complete" selected>Complet — coefficients 0 à 6</option>
+                        <option value="compact">Compact — degré, R² et domaine</option>
+                    </select>
+                </label>
+            </fieldset>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Run courant</h2>
+        <div id="empty-run" class="status">Aucun run ARCTA enregistré.</div>
+        <div id="run-details" class="hidden">
+            <div id="mechanical-results"></div>
+            <div class="summary-grid">
+                <div class="summary"><strong>Statut</strong><span id="run-status"></span></div>
+                <div class="summary"><strong>Profil</strong><span id="run-profile"></span></div>
+                <div class="summary"><strong>Acceptés</strong><span id="accepted-count">0</span></div>
+                <div class="summary"><strong>Rejetés</strong><span id="rejected-count">0</span></div>
+            </div>
+            <progress id="run-progress" max="100" value="0"></progress>
+            <p id="progress-label" class="muted">0 %</p>
+            <div id="run-message" class="status"></div>
+            <div id="current-run-actions" class="run-actions"></div>
+            <div id="run-error" class="status error hidden"></div>
+            <p>
+                <a id="download-xlsx" class="button hidden" href="#">
+                    Télécharger le classeur XLSX
+                </a>
+                <a id="download-pdf" class="button hidden" href="#">
+                    Télécharger le rapport PDF
+                </a>
+            </p>
+            <div id="plot-results" class="hidden">
+                <h3>Graphes PNG</h3>
+                <div class="plot-actions">
+                    <a id="download-plots" class="button hidden" href="#">
+                        Télécharger tous les graphes (ZIP)
+                    </a>
+                </div>
+                <div id="plot-gallery"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Historique des runs</h2>
+        <div id="run-actions-status" class="status" role="status" aria-live="polite"></div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Création</th>
+                    <th>Profil</th>
+                    <th>Statut</th>
+                    <th>Progression</th>
+                    <th>Résultat</th>
+                </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+        <p id="empty-history" class="muted">Aucun historique disponible.</p>
+    </section>
+<div class="arcta-bottom-bar" aria-label="Actions de la campagne">
+            <button id="check-button" type="button">Vérifier les prérequis</button>
+            <button id="run-button" type="button" class="primary" disabled>
+                Lancer la campagne
+            </button>
+            <button id="refresh-button" type="button">Actualiser</button>
+</div>
+</main>
+
+<script>
+const SESSION_ID = {{ session_id | tojson }};
+const API_BASE = `/api/sessions/${encodeURIComponent(SESSION_ID)}/campaign`;
+const CURRENT_URL = `${API_BASE}/runs/current`;
+const RUNS_URL = `${API_BASE}/runs`;
+const READINESS_URL = `${API_BASE}/readiness`;
+const SYNTHETIC_GRAPH_KEYS = {{ synthetic_graph_keys | tojson }};
+const ALL_GRAPH_KEYS = {{ report_graph_options | map(attribute=0) | list | tojson }};
+const DEFAULT_POLY_TYPES = {{ default_poly_types | tojson }};
+const DEFAULT_POLY_STATS = {{ default_poly_stats | tojson }};
+
+const profileSelect = document.getElementById("profile-select");
+const checkButton = document.getElementById("check-button");
+const runButton = document.getElementById("run-button");
+const refreshButton = document.getElementById("refresh-button");
+const readinessStatus = document.getElementById("readiness-status");
+const emptyRun = document.getElementById("empty-run");
+const runDetails = document.getElementById("run-details");
+const runError = document.getElementById("run-error");
+const downloadXlsx = document.getElementById("download-xlsx");
+const downloadPdf = document.getElementById("download-pdf");
+const plotResults = document.getElementById("plot-results");
+const downloadPlots = document.getElementById("download-plots");
+const plotGallery = document.getElementById("plot-gallery");
+const historyBody = document.getElementById("history-body");
+const emptyHistory = document.getElementById("empty-history");
+const reportOptionsPanel = document.getElementById("report-options-panel");
+const reportTitle = document.getElementById("report-title");
+const presetSynthetic = document.getElementById("preset-synthetic");
+const presetComplete = document.getElementById("preset-complete");
+const presetLabel = document.getElementById("preset-label");
+const polyColumnsMode = document.getElementById("poly-columns-mode");
+
+let readiness = null;
+let currentPayload = null;
+let busy = false;
+let pollHandle = null;
+let reportPreset = "SYNTHETIC";
+
+function checkedValues(selector) {
+    return Array.from(document.querySelectorAll(selector))
+        .filter(element => element.checked)
+        .map(element => element.value);
+}
+
+function setCheckedValues(selector, selected) {
+    const wanted = new Set(selected);
+    document.querySelectorAll(selector).forEach(element => {
+        element.checked = wanted.has(element.value);
+    });
+}
+
+function markCustomPreset() {
+    reportPreset = "CUSTOM";
+    presetLabel.textContent = "Personnalisé";
+}
+
+function applyReportPreset(preset) {
+    reportPreset = preset;
+    if (preset === "COMPLETE") {
+        setCheckedValues(".report-graph", ALL_GRAPH_KEYS);
+        document.querySelectorAll(".report-section").forEach(element => {
+            element.checked = true;
+        });
+        setCheckedValues(".poly-type", Array.from(
+            document.querySelectorAll(".poly-type"), element => element.value
+        ));
+        setCheckedValues(".poly-stat", Array.from(
+            document.querySelectorAll(".poly-stat"), element => element.value
+        ));
+        polyColumnsMode.value = "complete";
+        presetLabel.textContent = "Complet";
+    } else {
+        setCheckedValues(".report-graph", SYNTHETIC_GRAPH_KEYS);
+        document.querySelectorAll(".report-section").forEach(element => {
+            element.checked = true;
+        });
+        setCheckedValues(".poly-type", DEFAULT_POLY_TYPES);
+        setCheckedValues(".poly-stat", DEFAULT_POLY_STATS);
+        polyColumnsMode.value = "complete";
+        presetLabel.textContent = "Synthétique";
+    }
+}
+
+function collectReportOptions() {
+    const options = {
+        report_title: reportTitle.value.trim(),
+        preset: reportPreset,
+        graph_keys: checkedValues(".report-graph"),
+        poly_types: checkedValues(".poly-type"),
+        poly_stats: checkedValues(".poly-stat"),
+        poly_columns_mode: polyColumnsMode.value,
+    };
+    document.querySelectorAll(".report-section").forEach(element => {
+        options[element.value] = element.checked;
+    });
+    return options;
+}
+
+function refreshReportOptionsVisibility() {
+    const visible = profileSelect.value === "FULL_REPORT";
+    reportOptionsPanel.classList.toggle("hidden", !visible);
+}
+
+async function apiJson(url, options = {}) {
+    const response = await fetch(url, options);
+    let payload = null;
+    try { payload = await response.json(); } catch (_) { payload = null; }
+    if (!response.ok) {
+        const detail = payload?.detail;
+        const error = new Error(
+            typeof detail === "string"
+                ? detail
+                : (detail?.message || `Erreur HTTP ${response.status}`)
+        );
+        error.code = detail?.code || "HTTP_ERROR";
+        throw error;
+    }
+    return payload;
+}
+
+function setReadiness(text, kind = "") {
+    readinessStatus.className = "status" + (kind ? ` ${kind}` : "");
+    readinessStatus.textContent = text;
+}
+
+function setBusy(value) {
+    busy = value;
+    document.body.classList.toggle("busy", value);
+    checkButton.disabled = value;
+    refreshButton.disabled = value;
+    profileSelect.disabled = value;
+    reportOptionsPanel.querySelectorAll("input, select, button").forEach(element => {
+        element.disabled = value;
+    });
+    updateControls();
+}
+
+function updateControls() {
+    const active = currentPayload?.exists && !currentPayload?.terminal;
+    document.querySelectorAll(".run-delete").forEach(button => { button.disabled = busy || active; });
+    runButton.disabled = busy || !readiness?.ready || active;
+    runButton.textContent = currentPayload?.exists && currentPayload?.terminal
+        ? "Relancer la campagne"
+        : "Lancer la campagne";
+}
+
+function artifactUrl(runId, kind = "xlsx") {
+    if (String(kind).toLowerCase() === "xlsx") {
+        return `${RUNS_URL}/${encodeURIComponent(runId)}/artifacts/xlsx`;
+    }
+    return `${RUNS_URL}/${encodeURIComponent(runId)}/artifacts/${encodeURIComponent(kind)}`;
+}
+
+function appendText(parent, tag, text, className = "") {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = String(text ?? "");
+    parent.appendChild(element);
+    return element;
+}
+
+function renderReadiness(payload) {
+    readiness = payload;
+    if (payload.ready) {
+        const plan = payload.plan;
+        const accepted = plan?.accepted_source_ids?.length || 0;
+        const rejected = plan?.rejected_source_ids?.length || 0;
+        setReadiness(
+            `Campagne prête — ${accepted} essai(s) accepté(s), `
+            + `${rejected} rejeté(s). ${payload.selflock_message || ""}`,
+            "ok",
+        );
+    } else {
+        const code = payload.code ? ` [${payload.code}]` : "";
+        setReadiness(`${payload.message || "Prérequis incomplets."}${code}`, "warning");
+    }
+    updateControls();
+}
+
+function mechanicalLinks(run, host) {
+    const modes = {TOTAL: "Avec autofrein — couple total", EFFECTIVE: "Sans autofrein — couple effectif"};
+    for (const [basis, label] of Object.entries(modes)) {
+        const items = (run.artifacts || []).filter(a => a.torque_basis === basis && /^(XLSX|PDF|PLOTS_ZIP)_/.test(a.kind));
+        if (!items.length || run.status !== "SUCCEEDED") continue;
+        const box = document.createElement("div");
+        box.style.cssText = "padding:12px;margin:8px 0;border-left:6px solid " + (basis === "TOTAL" ? "#216296" : "#8a427e") + ";background:#f4f7fa";
+        appendText(box, "strong", label);
+        const links = document.createElement("div");
+        links.style.cssText = "display:flex;gap:16px;flex-wrap:wrap;margin-top:8px";
+        items.forEach(a => { const link = appendText(links, "a", a.kind.replace("_" + basis, "")); link.href = artifactUrl(run.run_id, a.kind); });
+        box.appendChild(links); host.appendChild(box);
+    }
+}
+
+function runActions(run, host) {
+    appendText(host, "span", `Run : ${run.run_id}`);
+    if (!["SUCCEEDED", "FAILED", "DELETE_PENDING"].includes(run.status)) return;
+    const button = appendText(host, "button", "Supprimer le run et ses copies", "run-delete");
+    button.type = "button";
+    button.onclick = () => deleteRun(run.run_id);
+}
+
+async function deleteRun(runId) {
+    if (busy) return;
+    const host = document.getElementById("run-actions-status");
+    const url = `${RUNS_URL}/${encodeURIComponent(runId)}`;
+    const headers = {"X-ARCTA-Delete":"1", "Content-Type":"application/json"};
+    setBusy(true);
+    host.textContent = "Vérification des copies du run…";
+    try {
+        const view = await apiJson(url + "/deletion", {headers});
+        if (!view.done) {
+            const labels = {SOURCE:"Copie locale", CENTRAL:"Copie centralisée", TECHNICAL:"Stockage technique"};
+            const paths = view.targets.map(t => `${labels[t.kind] || t.kind} : ${t.path} (${Object.keys(t.files).length} fichier(s))`).join("\n");
+            if (!window.confirm(`Supprimer définitivement le run ${runId} ?\n\n${paths}\n\nEssais sources, CONFIG et DIAG conservés.\nDABCTA : les données déjà capitalisées restent en base, mais les liens vers ces exports ne fonctionneront plus. Les copies manuelles ne sont pas suivies.\n\nCette suppression est irréversible.`)) {
+                host.textContent = "Suppression annulée.";
+                return;
+            }
+            await apiJson(url, {method:"DELETE", headers, body:JSON.stringify({token:view.token, confirm:true})});
+        }
+        await refreshRunState();
+        await refreshReadiness();
+        host.className = "status ok";
+        host.textContent = `Run ${runId} supprimé avec ses copies suivies. Vous pouvez relancer la campagne.`;
+    } catch (error) {
+        host.className = "status error";
+        host.textContent = error.message;
+        await refreshRunState();
+    } finally { setBusy(false); }
+}
+
+function plotGroups(items) {
+    const groups = {};
+    const labels = {TOTAL:"Avec autofrein — couple total", EFFECTIVE:"Sans autofrein — couple effectif", LEGACY:"Graphes du run"};
+    for (const basis of ["TOTAL", "EFFECTIVE", "LEGACY"]) {
+        const count = items.filter(a => (a.torque_basis || "LEGACY") === basis).length;
+        if (!count) continue;
+        const box = document.createElement("details");
+        box.className = "plot-mode" + (basis === "EFFECTIVE" ? " effective" : "");
+        box.open = Object.keys(groups).length === 0;
+        appendText(box, "summary", `${labels[basis]} — ${count} graphes`);
+        const grid = document.createElement("div");
+        grid.className = "plot-gallery";
+        box.appendChild(grid); plotGallery.appendChild(box); groups[basis] = grid;
+    }
+    return groups;
+}
+
+function renderCurrent(payload) {
+    document.getElementById("current-run-actions").replaceChildren();
+    document.getElementById("mechanical-results").replaceChildren();
+    const destinations = document.getElementById("output-location-results");
+    destinations.replaceChildren();
+    for (const item of payload.result?.output_locations || []) {
+        const line = document.createElement("p");
+        line.textContent = `${item.kind === "SOURCE" ? "Auprès des essais" : "Copie centralisée"} : ${item.path} — ${item.status === "OK" ? "Copie vérifiée" : "ÉCHEC : " + item.message}`;
+        line.style.overflowWrap = "anywhere";
+        if (item.status !== "OK") line.style.color = "#b42318";
+        destinations.appendChild(line);
+    }
+
+    currentPayload = payload;
+    emptyRun.classList.toggle("hidden", payload.exists);
+    runDetails.classList.toggle("hidden", !payload.exists);
+    downloadXlsx.classList.add("hidden");
+    downloadPdf.classList.add("hidden");
+    plotResults.classList.add("hidden");
+    downloadPlots.classList.add("hidden");
+    plotGallery.replaceChildren();
+    runError.classList.add("hidden");
+
+    if (!payload.exists) {
+        schedulePolling(false);
+        updateControls();
+        return;
+    }
+
+    const run = payload.run;
+    runActions(run, document.getElementById("current-run-actions"));
+    mechanicalLinks(run, document.getElementById("mechanical-results"));
+    downloadXlsx.textContent = run.artifacts?.some(a => a.torque_basis) ? "Index de capitalisation XLSX — deux modes" : "Télécharger le classeur XLSX";
+    const plan = run.plan || {};
+    const status = document.getElementById("run-status");
+    status.className = `pill ${String(run.status || "").toLowerCase()}`;
+    status.textContent = run.status;
+    document.getElementById("run-profile").textContent = plan.profile || "—";
+    document.getElementById("accepted-count").textContent =
+        plan.accepted_source_ids?.length || 0;
+    document.getElementById("rejected-count").textContent =
+        plan.rejected_source_ids?.length || 0;
+    document.getElementById("run-progress").value = run.progress_percent || 0;
+    document.getElementById("progress-label").textContent =
+        `${Number(run.progress_percent || 0).toFixed(1)} %`;
+    const message = document.getElementById("run-message");
+    message.textContent = run.message || "Aucun message de progression.";
+
+    if (run.status === "FAILED") {
+        runError.replaceChildren();
+        appendText(runError, "span", run.error_code || "RUN_FAILED", "error-code");
+        appendText(runError, "span", ` — ${run.error_message || "Échec du run."}`);
+        runError.classList.remove("hidden");
+    }
+
+    const hasXlsx = (run.artifacts || []).some(
+        item => String(item.kind || "").toUpperCase() === "XLSX"
+    );
+    if (run.status === "SUCCEEDED" && hasXlsx) {
+        downloadXlsx.href = artifactUrl(run.run_id);
+        downloadXlsx.classList.remove("hidden");
+    }
+    const hasPdf = (run.artifacts || []).some(
+        item => String(item.kind || "").toUpperCase() === "PDF"
+    );
+    if (run.status === "SUCCEEDED" && hasPdf) {
+        downloadPdf.href = artifactUrl(run.run_id, "pdf");
+        downloadPdf.classList.remove("hidden");
+    }
+
+    const pngArtifacts = (run.artifacts || []).filter(
+        item => String(item.kind || "").toUpperCase().startsWith("PNG_")
+    );
+    const plotsZip = (run.artifacts || []).find(
+        item => String(item.kind || "").toUpperCase() === "PLOTS_ZIP"
+    );
+    if (run.status === "SUCCEEDED" && pngArtifacts.length > 0) {
+        plotResults.classList.remove("hidden");
+        if (plotsZip) {
+            downloadPlots.href = artifactUrl(run.run_id, plotsZip.kind);
+            downloadPlots.classList.remove("hidden");
+        }
+        const groups = plotGroups(pngArtifacts);
+        pngArtifacts.forEach(item => {
+            const figure = document.createElement("figure");
+            figure.className = "plot-card";
+            const link = document.createElement("a");
+            link.href = artifactUrl(run.run_id, item.kind);
+            link.target = "_blank";
+            link.rel = "noopener";
+            const image = document.createElement("img");
+            image.src = link.href;
+            image.alt = String(item.title || item.filename || "Graphe ARCTA");
+            image.loading = "lazy";
+            link.appendChild(image);
+            figure.appendChild(link);
+            appendText(
+                figure,
+                "figcaption",
+                item.title || item.filename || item.kind,
+            );
+            groups[item.torque_basis || "LEGACY"].appendChild(figure);
+        });
+    }
+
+    schedulePolling(!payload.terminal);
+    updateControls();
+}
+
+function renderHistory(payload) {
+    historyBody.replaceChildren();
+    const runs = Array.isArray(payload.runs) ? [...payload.runs] : [];
+    for (const id of payload.deletions_pending || []) {
+        if (!runs.some(r => r.run_id === id)) runs.push({run_id:id, status:"DELETE_PENDING"});
+    }
+    emptyHistory.classList.toggle("hidden", runs.length > 0);
+    runs.forEach(run => {
+        const row = document.createElement("tr");
+        appendText(row, "td", run.plan?.created_at || "—");
+        appendText(row, "td", run.plan?.profile || "—");
+        appendText(row, "td", run.status || "—");
+        appendText(row, "td", `${Number(run.progress_percent || 0).toFixed(1)} %`);
+        const resultCell = document.createElement("td");
+        const hasXlsx = (run.artifacts || []).some(
+            item => String(item.kind || "").toUpperCase() === "XLSX"
+        );
+        if (run.status === "SUCCEEDED" && hasXlsx) {
+            const link = appendText(resultCell, "a", "Télécharger XLSX");
+            link.href = artifactUrl(run.run_id);
+            const plotsZip = (run.artifacts || []).find(
+                item => String(item.kind || "").toUpperCase() === "PLOTS_ZIP"
+            );
+            if (plotsZip) {
+                resultCell.appendChild(document.createElement("br"));
+                const plotsLink = appendText(resultCell, "a", "Télécharger graphes ZIP");
+                plotsLink.href = artifactUrl(run.run_id, plotsZip.kind);
+            }
+            const hasPdf = (run.artifacts || []).some(
+                item => String(item.kind || "").toUpperCase() === "PDF"
+            );
+            if (hasPdf) {
+                resultCell.appendChild(document.createElement("br"));
+                const pdfLink = appendText(resultCell, "a", "Télécharger rapport PDF");
+                pdfLink.href = artifactUrl(run.run_id, "pdf");
+            }
+        } else {
+            resultCell.textContent = "—";
+        }
+        mechanicalLinks(run, resultCell);
+        row.appendChild(resultCell);
+        historyBody.appendChild(row);
+        const actionsRow = document.createElement("tr");
+        const actionsCell = document.createElement("td");
+        actionsCell.colSpan = 5;
+        const actions = document.createElement("div"); actions.className = "run-actions";
+        runActions(run, actions); actionsCell.appendChild(actions);
+        actionsRow.appendChild(actionsCell); historyBody.appendChild(actionsRow);
+    });
+    updateControls();
+}
+
+function schedulePolling(active) {
+    if (pollHandle !== null) {
+        window.clearTimeout(pollHandle);
+        pollHandle = null;
+    }
+    if (active) {
+        pollHandle = window.setTimeout(refreshRunState, 1000);
+    }
+}
+
+async function refreshReadiness() {
+    const profile = encodeURIComponent(profileSelect.value);
+    try {
+        renderReadiness(await apiJson(`${READINESS_URL}?profile=${profile}`));
+    } catch (error) {
+        readiness = null;
+        setReadiness(`${error.message} [${error.code}]`, "error");
+        updateControls();
+    }
+}
+
+async function refreshRunState() {
+    try {
+        const [current, history] = await Promise.all([
+            apiJson(CURRENT_URL),
+            apiJson(RUNS_URL),
+        ]);
+        renderCurrent(current);
+        renderHistory(history);
+    } catch (error) {
+        schedulePolling(false);
+        setReadiness(`${error.message} [${error.code}]`, "error");
+    }
+}
+
+async function refreshAll() {
+    setBusy(true);
+    try {
+        await Promise.all([refreshReadiness(), refreshRunState()]);
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function startRun() {
+    const sourceDirectory = document.getElementById("output-source-directory").value.trim();
+    if (!sourceDirectory) {
+        setReadiness("Renseignez le dossier source des essais avant de lancer le run.", "error");
+        document.getElementById("output-source-directory").focus();
+        return;
+    }
+
+    const force = Boolean(currentPayload?.exists && currentPayload?.terminal);
+    if (force && !window.confirm(
+        "Un run terminé existe déjà. Confirmer la création d'un nouveau run ?"
+    )) return;
+
+    setBusy(true);
+    setReadiness("Démarrage du run ARCTA…");
+    try {
+        const requestBody = profileSelect.value === "FULL_REPORT"
+            ? JSON.stringify({
+                profile: profileSelect.value,
+                force,
+                report_options: collectReportOptions(),
+                source_directory: sourceDirectory,
+            })
+            : JSON.stringify({profile: profileSelect.value, force, source_directory: sourceDirectory});
+        const payload = await apiJson(RUNS_URL, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: requestBody,
+        });
+        renderCurrent(payload);
+        await refreshRunState();
+    } catch (error) {
+        setReadiness(`${error.message} [${error.code}]`, "error");
+        await refreshRunState();
+    } finally {
+        setBusy(false);
+    }
+}
+
+profileSelect.addEventListener("change", () => {
+    refreshReportOptionsVisibility();
+    refreshReadiness();
+});
+presetSynthetic.addEventListener("click", () => applyReportPreset("SYNTHETIC"));
+presetComplete.addEventListener("click", () => applyReportPreset("COMPLETE"));
+reportOptionsPanel.querySelectorAll("input, select").forEach(element => {
+    element.addEventListener("change", markCustomPreset);
+});
+checkButton.addEventListener("click", async () => {
+    setBusy(true);
+    setReadiness("Vérification des prérequis en cours…");
+    try {
+        await refreshReadiness();
+        readinessStatus.textContent += " — Contrôle terminé à "
+            + new Date().toLocaleTimeString("fr-FR");
+    } finally {
+        setBusy(false);
+    }
+});
+refreshButton.addEventListener("click", refreshAll);
+runButton.addEventListener("click", startRun);
+refreshReportOptionsVisibility();
+refreshAll();
+</script>
+<script src="/static/local_files.js?v=63F2A"></script>
+<script src="/static/analysis_settings.js?v=64G1"></script>
+</body>
+</html>

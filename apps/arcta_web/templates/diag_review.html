@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ARCTA — DIAG / Revue</title>
+    <style>
+        :root {
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            background: #f4f6f8;
+            color: #20252b;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        main { max-width: 1320px; margin: 0 auto; padding: 28px; }
+        h1 { margin: 0 0 4px; }
+        h2 { margin-top: 0; font-size: 1.15rem; }
+        .subtitle { margin-top: 0; color: #5b6570; }
+        .card {
+            background: white;
+            border: 1px solid #dce1e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+        .toolbar, .counts, .trial-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        button, textarea { font: inherit; }
+        button {
+            min-height: 40px;
+            border: 1px solid #aeb7c0;
+            border-radius: 6px;
+            padding: 8px 14px;
+            cursor: pointer;
+            background: white;
+        }
+        button.primary { background: #24364b; color: white; border-color: #24364b; }
+        button.accept { background: #e8f4eb; border-color: #9bc7a5; }
+        button.reject { background: #fbe9e9; border-color: #d9a0a0; }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .status {
+            padding: 11px 13px;
+            border-radius: 6px;
+            margin-top: 14px;
+            background: #eef1f4;
+        }
+        .status.ok { background: #e8f4eb; }
+        .status.warning { background: #fff5dd; }
+        .status.error { background: #fbe9e9; }
+        .count {
+            min-width: 130px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #eef1f4;
+            font-weight: 700;
+        }
+        .count.accepted { background: #e8f4eb; }
+        .count.rejected { background: #fbe9e9; }
+        .count.pending { background: #fff5dd; }
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 3px 9px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: #e9edf1;
+        }
+        .pill.ok, .pill.accepted { background: #dff1e4; }
+        .pill.warning, .pill.pending { background: #ffedbd; }
+        .pill.manual_review, .pill.rejected { background: #f7dcdc; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+        th, td {
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid #e2e6ea;
+            padding: 10px 8px;
+        }
+        th { background: #f6f7f8; }
+        .source-name { font-weight: 700; }
+        .source-id { color: #68737d; font-size: 0.78rem; overflow-wrap: anywhere; }
+        .flags { margin: 5px 0 0; padding-left: 18px; }
+        textarea {
+            width: 100%;
+            min-width: 230px;
+            min-height: 72px;
+            resize: vertical;
+            border: 1px solid #bfc7cf;
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .hint { color: #68737d; font-size: 0.85rem; margin: 5px 0 0; }
+        .error-list { margin-bottom: 0; }
+        .hidden { display: none; }
+        .busy { cursor: progress; }
+        .review-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .diag-principle-figure {
+            margin: 0;
+        }
+        .diag-principle-figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 1px solid #dce1e6;
+            border-radius: 8px;
+            background: white;
+        }
+        .diag-principle-figure figcaption {
+            margin-top: 10px;
+            color: #5b6570;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 760px) {
+            main { padding: 14px; }
+            .count { min-width: 100%; }
+        }
+
+        .workflow-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .workflow-nav a { padding: 8px 12px; border: 1px solid #aeb7c0; border-radius: 6px; background: white; color: #20252b; text-decoration: none; }
+        .workflow-nav a.active { background: #24364b; border-color: #24364b; color: white; }
+    </style>
+    <link rel="stylesheet" href="/static/arcta.css">
+</head>
+<body class="workflow-page">
+<main>
+    <nav class="workflow-nav" aria-label="Parcours campagne">
+        <a href="/">Accueil</a>
+        <a href="/sessions/{{ session_id }}/config">CONFIG</a>
+        <a href="/sessions/{{ session_id }}/mapping">Mapping</a>
+        <a class="active" href="/sessions/{{ session_id }}/diag">DIAG</a>
+        <a href="/sessions/{{ session_id }}/campaign">Exécution</a>
+    </nav>
+    <h1>DIAG / Revue de campagne</h1>
+    <p class="subtitle">
+        {{ source_count }} source(s) dans la session. Le DIAG recommande ;
+        chaque acceptation ou rejet reste une décision explicite.
+    </p>
+
+    <section class="card">
+        <h2>Diagnostiquer les essais</h2>
+        <div class="toolbar">
+            <button id="run-button" type="button" class="primary">Lancer le DIAG</button>
+            <button id="refresh-button" type="button">Actualiser la revue</button>
+        </div>
+        <div id="page-status" class="status">Chargement de la revue courante…</div>
+        <div id="stale-warning" class="status warning hidden"></div>
+    </section>
+
+    <section class="card" id="diag-principle-section">
+        <h2>Principe physique du DIAG</h2>
+        <p class="hint">
+            Lecture chronologique de l'inversion, de la course morte de la chaîne
+            d'entraînement, de la libération torsionnelle puis du desserrage effectif.
+            Cette figure est explicative : elle ne représente pas les valeurs de la campagne.
+        </p>
+        <figure class="diag-principle-figure">
+            <img src="/static/diag_principle_arcta.png?v=63E1"
+                 alt="Figure de principe ARCTA montrant l'évolution temporelle de l'angle, de la tension et des couples T, T_b et T_th pendant le serrage puis le desserrage">
+            <figcaption>
+                Nomenclature de la figure : Y = F ; Xg = T ; Xt = T_th ; Xh = T_b ; A = Θ.
+                Le couple T_th résiduel est évalué sur le plateau stable de course morte,
+                sous contrôle du bilan T ≈ 0 et T_b ≈ −T_th.
+            </figcaption>
+        </figure>
+    </section>
+
+    <section id="diag-visual" class="card" style="overflow-x:auto"></section>
+
+    <section id="summary-section" class="card hidden">
+        <h2>Synthèse des décisions</h2>
+        <div class="counts">
+            <div id="total-count" class="count">Total : 0</div>
+            <div id="pending-count" class="count pending">En attente : 0</div>
+            <div id="accepted-count" class="count accepted">Acceptés : 0</div>
+            <div id="rejected-count" class="count rejected">Rejetés : 0</div>
+        </div>
+    </section>
+
+    <section id="errors-section" class="card hidden">
+        <h2>Erreurs de préparation</h2>
+        <div class="status error">
+            Ces erreurs sont distinctes des recommandations scientifiques du DIAG.
+        </div>
+        <ul id="errors-list" class="error-list"></ul>
+    </section>
+
+    <section id="trials-section" class="card hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <h2>Décisions par essai</h2>
+            <button id="accept-all-button" type="button" class="accept" data-review-control="true">
+                Tout accepter
+            </button>
+        </div>
+        <p id="accept-all-status" role="status" aria-live="polite"></p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Essai</th>
+                    <th>Diagnostic automatique</th>
+                    <th>Comportement global /100</th>
+                    <th>Comparatif population /100</th>
+                    <th>Décision et commentaire</th>
+                </tr>
+                </thead>
+                <tbody id="trials-body"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card review-footer">
+        <button id="validate-button" type="button" class="primary" disabled>
+            Valider la revue et passer à l'exécution
+        </button>
+    </section>
+</main>
+<script src="/static/diag_visual.js?v=62G1E"></script>
+
+<script>
+const SESSION_ID = {{ session_id | tojson }};
+const REVIEW_URL = `/api/sessions/${encodeURIComponent(SESSION_ID)}/diag/review`;
+const RUN_URL = `/api/sessions/${encodeURIComponent(SESSION_ID)}/diag/run`;
+const VALIDATE_URL = `${REVIEW_URL}/validate`;
+
+const runButton = document.getElementById("run-button");
+const refreshButton = document.getElementById("refresh-button");
+const validateButton = document.getElementById("validate-button");
+const pageStatus = document.getElementById("page-status");
+const staleWarning = document.getElementById("stale-warning");
+const summarySection = document.getElementById("summary-section");
+const trialsSection = document.getElementById("trials-section");
+const trialsBody = document.getElementById("trials-body");
+const errorsSection = document.getElementById("errors-section");
+const errorsList = document.getElementById("errors-list");
+
+let currentPayload = null;
+let busy = false;
+
+function setStatus(text, kind = "") {
+    pageStatus.className = "status" + (kind ? ` ${kind}` : "");
+    pageStatus.textContent = text;
+}
+
+function setBusy(value, message = "") {
+    busy = value;
+    document.body.classList.toggle("busy", value);
+    runButton.disabled = value;
+    refreshButton.disabled = value;
+    if (value && message) setStatus(message);
+    updateControls();
+}
+
+async function apiJson(url, options = {}) {
+    const response = await fetch(url, options);
+    let payload = null;
+    try { payload = await response.json(); } catch (_) { payload = null; }
+    if (!response.ok) {
+        const detail = payload?.detail;
+        const message = typeof detail === "string"
+            ? detail
+            : (detail?.message || `Erreur HTTP ${response.status}`);
+        const error = new Error(message);
+        error.code = detail?.code || "HTTP_ERROR";
+        throw error;
+    }
+    return payload;
+}
+
+function cssToken(value) {
+    return String(value || "").toLowerCase().replaceAll(" ", "_");
+}
+
+function appendText(parent, tag, text, className = "") {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = String(text ?? "");
+    parent.appendChild(element);
+    return element;
+}
+
+function reviewData() {
+    return currentPayload?.stored?.review || null;
+}
+
+function isReadOnly() {
+    const review = reviewData();
+    return busy || !review || currentPayload?.stale || review.validated;
+}
+
+function commentRequired(trial, decision) {
+    return decision === "REJECTED"
+        || (decision === "ACCEPTED" && trial.automatic_status === "MANUAL_REVIEW");
+}
+
+function updateControls() {
+    const review = reviewData();
+    const readOnly = isReadOnly();
+    validateButton.disabled = busy || !review || currentPayload?.stale
+        || review.validated || !review.all_decided;
+    runButton.textContent = review ? "Relancer le DIAG" : "Lancer le DIAG";
+    document.querySelectorAll("[data-review-control]").forEach(
+        element => { element.disabled = readOnly; }
+    );
+}
+
+function renderErrors(errors) {
+    errorsList.replaceChildren();
+    const rows = Array.isArray(errors) ? errors : [];
+    errorsSection.classList.toggle("hidden", rows.length === 0);
+    rows.forEach(error => {
+        const item = document.createElement("li");
+        const name = error.source_name || error.source_id || "Source inconnue";
+        item.textContent = `${name} — ${error.message || error.error || "Erreur de préparation"}`;
+        errorsList.appendChild(item);
+    });
+}
+
+function makeDecisionButton(trial, decision, label, className, textarea) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className;
+    button.textContent = label;
+    button.dataset.reviewControl = "true";
+    button.addEventListener("click", async () => {
+        const comment = textarea.value.trim();
+        if (commentRequired(trial, decision) && !comment) {
+            setStatus("Un commentaire est obligatoire pour cette décision.", "error");
+            textarea.focus();
+            return;
+        }
+        await saveDecision(trial.source_id, decision, comment);
+    });
+    return button;
+}
+
+function renderTrials(trials) {
+    trialsBody.replaceChildren();
+    trials.forEach(trial => {
+        const row = document.createElement("tr");
+        const sourceCell = document.createElement("td");
+        appendText(sourceCell, "div", trial.source_name, "source-name");
+        const technical = document.createElement("details");
+        technical.className = "source-trace";
+        const technicalSummary = document.createElement("summary");
+        technicalSummary.textContent = "Identifiant technique";
+        technical.appendChild(technicalSummary);
+        appendText(technical, "div", trial.source_id, "source-id");
+        sourceCell.appendChild(technical);
+        row.appendChild(sourceCell);
+
+        const automaticCell = document.createElement("td");
+        appendText(
+            automaticCell,
+            "span",
+            ({OK:"Conforme", WARNING:"Avertissement", MANUAL_REVIEW:"Revue manuelle"})[trial.automatic_status] || trial.automatic_status,
+            `pill ${cssToken(trial.automatic_status)}`,
+        );
+        if (trial.main_flags?.length) {
+            const flags = document.createElement("ul");
+            flags.className = "flags";
+            trial.main_flags.forEach(flag => {
+                const item = appendText(
+                    flags,
+                    "li",
+                    window.diagFlagLabel ? window.diagFlagLabel(flag) : flag,
+                );
+                item.title = `Code technique : ${flag}`;
+            });
+            automaticCell.appendChild(flags);
+        }
+        row.appendChild(automaticCell);
+
+        const scoreCell = document.createElement("td");
+        scoreCell.textContent = Number(trial.Score_Comportement_Global ?? trial.quality_score).toFixed(1);
+        scoreCell.title = "Barème historique contact / accostage / A0";
+        row.appendChild(scoreCell);
+        const populationCell = document.createElement("td");
+        const population = trial.population;
+        const number = value => value == null ? "—" : Number(value).toLocaleString("fr-FR", {maximumFractionDigits: 2});
+        appendText(populationCell, "strong", population?.score == null ?
+            (trial.decision === "REJECTED" ? "Hors population" : "Non calculable") : number(population.score));
+        if (population) {
+            appendText(populationCell, "p", `${population.count}/${population.available} indicateurs comparables évalués`);
+            if (population.previous != null && population.score != null && Math.abs(population.previous-population.score)>0.005)
+                appendText(populationCell, "p", `Avant réévaluation : ${number(population.previous)}`);
+            const detail = document.createElement("details");
+            appendText(detail, "summary", "Comprendre le score");
+                        const rules = currentPayload?.stored?.population?.rules;
+            if (rules) {
+                appendText(
+                    detail,
+                    "p",
+                    `Distance à la médiane exprimée en IQR. ` +
+                    `Aucune pénalité jusqu’à ${number(rules.distance_free)} IQR ; ` +
+                    `pénalité croissante jusqu’à 100 % à ${number(rules.distance_full)} IQR. ` +
+                    `Pondération : ${number(100 * rules.mean_weight)} % pour la moyenne des familles ` +
+                    `et ${number(100 * rules.worst_weight)} % pour la pire pénalité. ` +
+                    `Aucun rejet automatique.`
+                );
+            } else {
+                appendText(
+                    detail,
+                    "p",
+                    "Barème non disponible : relancer le DIAG pour l’enregistrer."
+                );
+            }
+            for (const item of population.details || []) {
+                const sign = item.Value == null || item.Median == null ? "" : item.Value < item.Median ? "inférieur" : "supérieur";
+                appendText(detail, "p", `${item.Description} : ${number(item.Value)} ; médiane ${number(item.Median)} ; IQR ${number(item.IQR)} ; N=${item.N} ; écart ${sign} ${number(item.Distance)} IQR ; pénalité ${item.Penalty == null ? "non évaluée" : number(100*item.Penalty)+" %"}`);
+            }
+            populationCell.appendChild(detail);
+        } else appendText(populationCell, "p", "Relancer le DIAG pour initialiser la comparaison.");
+        row.appendChild(populationCell);
+
+        const decisionCell = document.createElement("td");
+        appendText(
+            decisionCell,
+            "span",
+            ({ACCEPTED:"Accepté", REJECTED:"Rejeté", PENDING:"En attente"})[trial.decision] || trial.decision,
+            `pill ${cssToken(trial.decision)}`,
+        );
+        const textarea = document.createElement("textarea");
+        textarea.value = trial.comment || "";
+        textarea.placeholder = "Commentaire de revue";
+        textarea.dataset.reviewControl = "true";
+        textarea.dataset.sourceId = trial.source_id;
+        decisionCell.appendChild(textarea);
+        const hint = commentRequired(trial, "ACCEPTED")
+            ? "Commentaire obligatoire pour accepter ce cas MANUAL_REVIEW."
+            : "Commentaire obligatoire en cas de rejet.";
+        appendText(decisionCell, "p", hint, "hint");
+        const actions = document.createElement("div");
+        actions.className = "trial-actions";
+        actions.appendChild(makeDecisionButton(trial, "ACCEPTED", "Accepter", "accept", textarea));
+        actions.appendChild(makeDecisionButton(trial, "REJECTED", "Rejeter", "reject", textarea));
+        decisionCell.appendChild(actions);
+        row.appendChild(decisionCell);
+        trialsBody.appendChild(row);
+    });
+}
+
+function render(payload) {
+    currentPayload = payload;
+    window.renderDiagVisual(payload);
+    if (!payload.exists) {
+        summarySection.classList.add("hidden");
+        trialsSection.classList.add("hidden");
+        errorsSection.classList.add("hidden");
+        staleWarning.classList.add("hidden");
+        setStatus("Aucune revue DIAG enregistrée. Lancez l'analyse.");
+        updateControls();
+        return;
+    }
+
+    const review = reviewData();
+    summarySection.classList.remove("hidden");
+    trialsSection.classList.remove("hidden");
+    document.getElementById("total-count").textContent = `Total : ${review.total_count}`;
+    document.getElementById("pending-count").textContent = `En attente : ${review.pending_count}`;
+    document.getElementById("accepted-count").textContent = `Acceptés : ${review.accepted_count}`;
+    document.getElementById("rejected-count").textContent = `Rejetés : ${review.rejected_count}`;
+    renderErrors(payload.stored.source_errors);
+    renderTrials(review.trials || []);
+
+    if (payload.stale) {
+        const reasons = (payload.reasons || []).join(", ");
+        staleWarning.textContent = `Revue obsolète (${reasons}). Elle reste consultable mais doit être recalculée.`;
+        staleWarning.classList.remove("hidden");
+        setStatus("La campagne a changé depuis ce DIAG.", "warning");
+    } else {
+        staleWarning.classList.add("hidden");
+        setStatus(
+            review.validated ? "Revue DIAG validée et verrouillée." : "Revue DIAG en cours.",
+            review.validated ? "ok" : "",
+        );
+    }
+    updateControls();
+}
+
+async function loadReview() {
+    setBusy(true, "Chargement de la revue…");
+    try { render(await apiJson(REVIEW_URL)); }
+    catch (error) { setStatus(error.message, "error"); }
+    finally { setBusy(false); }
+}
+
+async function runDiag() {
+    const review = reviewData();
+    const force = Boolean(review?.validated && !currentPayload?.stale);
+    if (force && !window.confirm(
+        "Cette revue est validée. Confirmer son remplacement par une nouvelle exécution ?"
+    )) return;
+    setBusy(true, "DIAG en cours… Cette opération peut durer plusieurs minutes.");
+    try {
+        render(await apiJson(RUN_URL, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({force}),
+        }));
+    } catch (error) { setStatus(error.message, "error"); }
+    finally { setBusy(false); }
+}
+
+async function saveDecision(sourceId, decision, comment) {
+    setBusy(true, "Enregistrement de la décision…");
+    try {
+        const url = `${REVIEW_URL}/trials/${encodeURIComponent(sourceId)}`;
+        render(await apiJson(url, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({decision, comment}),
+        }));
+    } catch (error) { setStatus(error.message, "error"); }
+    finally { setBusy(false); }
+}
+
+async function confirmSelflock(data) {
+    return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        dialog.style.cssText = 'max-width:850px;width:90%;border:2px solid #21618c;border-radius:10px;padding:24px';
+        const title = document.createElement('h2');
+        title.textContent = 'Actualiser les autofreins de CONFIG ?';
+        const explanation = document.createElement('p');
+        explanation.textContent = `${data.valid_count} valeurs valides sur ${data.accepted.length} essais acceptés. ` +
+            'Statistiques des couples médians avant A0 ; écart-type entre essais (n−1). ' +
+            'Les valeurs en gras seront remplacées après confirmation (> 5 %, valeur absente ou effectif différent).';
+        const table = document.createElement('table');
+        table.style.cssText = 'width:100%;border-collapse:collapse';
+        const head = table.createTHead().insertRow();
+        for (const label of ['Champ', 'CONFIG', 'DIAG', 'Écart']) {
+            const th = document.createElement('th'); th.textContent = label; head.append(th);
+        }
+        const fmt = v => v == null ? 'Non disponible' : (typeof v === 'number' ? v.toLocaleString('fr-FR', {maximumSignificantDigits:5}) : String(v));
+        for (const item of data.rows) {
+            const tr = table.insertRow();
+            if (item.change) tr.style.cssText = 'font-weight:bold;background:#e8f4fa';
+            const delta = item.unavailable ? 'Valeur conservée' : item.delta_percent != null ? fmt(item.delta_percent) + ' %' : item.old == null ? 'À renseigner' : Number(item.old) === 0 && item.new !== 0 ? 'Référence nulle' : '—';
+            for (const value of [item.label, fmt(item.old), fmt(item.new), delta]) {
+                const td = tr.insertCell(); td.textContent = value; td.style.padding = '8px';
+            }
+        }
+        const buttons = document.createElement('p');
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Revenir à la revue';
+        const confirm = document.createElement('button'); confirm.type = 'button';
+        confirm.textContent = 'Mettre à jour CONFIG et valider la revue'; confirm.className = 'primary';
+        const finish = result => { dialog.close(); dialog.remove(); resolve(result); };
+        cancel.onclick = () => finish(false); confirm.onclick = () => finish(true);
+        dialog.oncancel = event => { event.preventDefault(); finish(false); };
+        buttons.append(cancel, document.createTextNode(' '), confirm);
+        dialog.append(title, explanation, table, buttons);
+        document.body.append(dialog); dialog.showModal(); cancel.focus();
+    });
+}
+
+async function validateReview() {
+    // 64J1 : garde défensive — si un essai n'est pas statué, orienter
+    // vers sa ligne (focus + défilement) au lieu d'ouvrir le dialogue
+    // d'autofreins (dont les valeurs seraient vides sans essai accepté).
+    const pendingTrial = (reviewData()?.trials || []).find(trial => !trial.decision || trial.decision === "PENDING");
+    if (pendingTrial) {
+        const row = trialsBody.querySelector(`textarea[data-source-id="${CSS.escape(pendingTrial.source_id)}"]`)?.closest("tr");
+        if (row) {
+            row.scrollIntoView({ behavior: "smooth", block: "center" });
+            row.style.outline = "3px solid #a85246";
+            setTimeout(() => { row.style.outline = ""; }, 2500);
+            const button = row.querySelector("button.accept, button.trial-actions button");
+            if (button) button.focus();
+        }
+        setStatus(`${pendingTrial.source_name} : statuer sur cet essai (Accepter / Rejeter) avant de valider la revue.`, "error");
+        return;
+    }
+    setBusy(true, "Validation finale de la revue…");
+    try {
+        const check = await apiJson(`${REVIEW_URL}/selflock-config`);
+        if (check.requires_confirmation && !(await confirmSelflock(check))) return;
+        const payload = await apiJson(VALIDATE_URL, {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({selflock_token: check.token}),
+        });
+        render(payload);
+        if (payload?.stored?.review?.validated) {
+            window.location.assign(
+                `/sessions/${encodeURIComponent(SESSION_ID)}/campaign`
+            );
+        }
+    }
+    catch (error) { setStatus(error.message, "error"); }
+    finally { setBusy(false); }
+}
+
+async function acceptAllTrials() {
+    if (isReadOnly()) return;
+    const status = document.getElementById("accept-all-status");
+    const editors = new Map(Array.from(
+        trialsBody.querySelectorAll("textarea[data-source-id]"),
+        element => [element.dataset.sourceId, element]
+    ));
+    const choices = (reviewData().trials || []).map(trial => ({
+        trial,
+        comment: (editors.get(trial.source_id)?.value ?? trial.comment ?? "").trim()
+    }));
+    if (!choices.length) return;
+
+    const missing = choices.filter(item =>
+        commentRequired(item.trial, "ACCEPTED") && !item.comment
+    );
+    if (missing.length) {
+        status.textContent = `${missing.length} essai(s) en revue manuelle : renseignez leur commentaire avant de tout accepter. Aucune décision modifiée.`;
+        editors.get(missing[0].trial.source_id)?.focus();
+        return;
+    }
+
+    let latest = currentPayload;
+    let completed = 0;
+    setBusy(true);
+    status.textContent = `Acceptation en cours : 0/${choices.length}…`;
+
+    try {
+        for (const item of choices) {
+            latest = await apiJson(
+                `${REVIEW_URL}/trials/${encodeURIComponent(item.trial.source_id)}`,
+                {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        decision: "ACCEPTED",
+                        comment: item.comment
+                    })
+                }
+            );
+            completed += 1;
+            status.textContent = `Acceptation en cours : ${completed}/${choices.length}…`;
+        }
+        status.textContent = `${completed} essai(s) accepté(s). Vous pouvez maintenant valider la revue.`;
+    } catch (error) {
+        status.textContent = `Opération interrompue après ${completed}/${choices.length} réponses confirmées : ${error.message}. Les commentaires saisis sont conservés ; vous pouvez réessayer.`;
+    } finally {
+        render(latest);
+        const comments = new Map(
+            choices.map(item => [item.trial.source_id, item.comment])
+        );
+        trialsBody.querySelectorAll("textarea[data-source-id]").forEach(element => {
+            if (comments.has(element.dataset.sourceId)) {
+                element.value = comments.get(element.dataset.sourceId);
+            }
+        });
+        setBusy(false);
+    }
+}
+
+document.getElementById("accept-all-button").addEventListener("click", acceptAllTrials);
+
+runButton.addEventListener("click", runDiag);
+refreshButton.addEventListener("click", loadReview);
+validateButton.addEventListener("click", validateReview);
+loadReview();
+</script>
+</body>
+</html>

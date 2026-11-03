@@ -1,0 +1,46 @@
+// 64D : uniquement des lectures ; les valeurs complètes restent dans la base.
+const catStats={MEAN:'Moyenne',MEDIAN:'Médiane',MIN:'Minimum',MAX:'Maximum',STD:'Écart-type',Q1:'Premier quartile',Q3:'Troisième quartile',IQR:'Écart interquartile',MAD:'Écart absolu médian',MEAN_PLUS_2S:'Moyenne + 2 écarts-types',MEAN_MINUS_2S:'Moyenne − 2 écarts-types',MEAN_CI_LOW:'IC de la moyenne — borne basse',MEAN_CI_HIGH:'IC de la moyenne — borne haute',MEDIAN_CI_LOW:'IC de la médiane — borne basse',MEDIAN_CI_HIGH:'IC de la médiane — borne haute',TOL_PARAM_LOW:'Tolérance paramétrique — borne basse',TOL_PARAM_HIGH:'Tolérance paramétrique — borne haute',TOL_NP_LOW:'Tolérance non paramétrique — borne basse',TOL_NP_HIGH:'Tolérance non paramétrique — borne haute',TOL_LOW:'Tolérance retenue — borne basse',TOL_HIGH:'Tolérance retenue — borne haute',N:'Effectif',SHAPIRO_P:'Test de Shapiro — valeur p',TOL_P:'Proportion cible',TOL_CONF:'Confiance cible',MEDIAN_CI_CONF_TARGET:'Confiance cible de la médiane',MEDIAN_CI_CONF_ACTUAL:'Confiance atteinte de la médiane',MEDIAN_CI_ORDER_LOW:'Rang inférieur de la médiane',MEDIAN_CI_ORDER_HIGH:'Rang supérieur de la médiane'};
+const catParams={MEAN_CI_CONF_LEVEL:"Confiance de l’intervalle de la moyenne",THR_RATIO_DEFAULT:'Seuil de conservation de la tension',ISO_TOL_P_CONTENT:'Proportion de l’intervalle de tolérance',ISO_TOL_CONF_LEVEL:'Confiance de l’intervalle de tolérance',ISO_MEDIAN_CONF_LEVEL:'Confiance de l’intervalle de la médiane',NORMALITY_ALPHA:'Seuil du test de normalité',NORMALITY_MIN_N:'Effectif minimal du test de normalité'};
+function catFormat(v){if(v===null||v===undefined||v==='')return 'Non renseigné';if(typeof v==='boolean')return v?'Oui':'Non';if(typeof v!=='number')return String(v);const a=Math.abs(v);return a!==0&&(a>=1e5||a<1e-2)?v.toExponential(2).replace('.',','):v.toLocaleString('fr-FR',{maximumFractionDigits:2})}
+function catTable(headers,rows){const box=text('div','','scroll');box.append(table(headers,rows));return box}
+function catRaw(value,title='Données archivées — précision complète'){const d=document.createElement('details');d.append(text('summary',title),text('pre',JSON.stringify(value,null,2)));return d}
+const catColumns={Method:'Méthode',Variable:'Indicateur',N:'Effectif',Mean_Nm:'Moyenne (N·m)',Median_Nm:'Médiane (N·m)',Std_Nm:'Écart-type (N·m)',Q1_Nm:'Premier quartile (N·m)',Q3_Nm:'Troisième quartile (N·m)',Min_Nm:'Minimum (N·m)',Max_Nm:'Maximum (N·m)'};
+function catRecords(rows,empty){if(!rows.length)return text('p',empty,'muted');const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];return catTable(keys.map(k=>catColumns[k]||k),rows.map(r=>keys.map(k=>catFormat(r[k]))))}
+function catGroup(title,content,open=false){const d=document.createElement('details');d.open=open;d.append(text('summary',title),content);return d}
+function catFamily(r){return JSON.stringify([r.Compute_Sheet,r.Type])}
+function catFiltered(rows,family,category){return rows.filter(r=>(!family||catFamily(r)===family)&&(!category||r.DABCTA_category===category))}
+function catHide(){const box=$('catalogue');if(box)box.hidden=true}
+async function viewCatalogue(variant){await task('Lecture de la variante capitalisée…',async()=>{const data=await api('catalogue',{variant});catRender(data);status(`Variante ${variant} consultée — révision ${data.revision}. Aucune décision modifiée.`)})}
+function catRender(d){let box=$('catalogue');if(!box){box=text('section','');box.id='catalogue';$('active').after(box)}box.hidden=false;box.replaceChildren();box.append(text('h2',`${d.label} — variante ${d.variant}`),text('p',`${d.active?'Référence active':d.statistical_exploitable?'Déclinaison statistique exploitable':'Run conservé hors exploitation'} · ${d.accepted_count} essais retenus · état à la révision ${d.revision}`),text('p','Consultation de l’instantané conservé dans la base, même si les fichiers d’origine ont été déplacés.','muted'),button('Fermer la consultation',catHide));
+ if((d.statistical_runs||[]).length>1){
+  const pick=text('select',''),label=text('label','Déclinaisons de la même analyse — choisir les paramètres');
+  pick.id='catalogue-statistical-run';label.htmlFor=pick.id;
+  for(const r of d.statistical_runs){
+   const params=['MEAN_CI_CONF_LEVEL','ISO_MEDIAN_CONF_LEVEL','ISO_TOL_P_CONTENT','ISO_TOL_CONF_LEVEL'].map(k=>`${({MEAN_CI_CONF_LEVEL:'IC moyenne',ISO_MEDIAN_CONF_LEVEL:'IC médiane',ISO_TOL_P_CONTENT:'Tol. proportion',ISO_TOL_CONF_LEVEL:'Tol. confiance'})[k]} : ${r.settings[k]==null?'non renseigné':catFormat(r.settings[k]*100)+' %'}`).join(' · ');
+   const o=text('option',`${typeof runName==='function'?runName(r.variant):'Run_V'+r.variant} · ${r.exploitable?'Exploitable':'Hors exploitation'} · ${params}`);o.value=r.variant;pick.append(o)
+  }
+  pick.value=d.variant;pick.style.maxWidth='100%';pick.onchange=()=>viewCatalogue(Number(pick.value));
+  box.append(label,pick,text('p','Une analyse commune, des jeux de paramètres distincts. Chaque run conserve sa qualification. Les polynômes identiques sont stockés une fois ; leurs liens de provenance sont conservés.','muted'));
+ }
+ const config=text('div','');for(const section of [...new Set(d.config.filter(r=>!Object.hasOwn(d.settings,r.Code)).map(r=>r.Section))]){config.append(text('h3',section),catTable(['Paramètre','Valeur','Unité','Statut','Source'],d.config.filter(r=>r.Section===section&&!Object.hasOwn(d.settings,r.Code)).map(r=>[r['Libellé']||r.Code,catFormat(r.Valeur),r['Unité']||'—',r.Statut||'—',r.Source||'—'])))}if(!d.config.length)config.append(text('p','Configuration non archivée.'));box.append(catGroup('Configuration et constantes de calcul',config,true));
+ box.append(catGroup('Paramètres statistiques effectivement utilisés',catTable(['Paramètre','Valeur'],Object.entries(d.settings).map(([k,v])=>[catParams[k]||k,percentages.has(k)?catFormat(v*100)+' %':catFormat(v)])),true));
+ const polys=text('div',''),family=text('select',''),category=text('select',''),list=text('div','');family.id='catalogue-family';category.id='catalogue-category';
+ const fLabel=text('label','Famille de polynômes');fLabel.htmlFor=family.id;const cLabel=text('label','Nature des données');cLabel.htmlFor=category.id;
+ const families=[...new Map(d.polynomials.map(r=>[catFamily(r),r])).entries()];for(const [key,r] of families){const o=text('option',`${r.Type} — ${r.Compute_Sheet}`);o.value=key;family.append(o)}
+ for(const [value,label] of [['COURBE','Courbes statistiques'],['INDICATEUR','Indicateurs techniques'],['A_CLASSER','Non classés'],['','Toutes les catégories']]){const o=text('option',label);o.value=value;category.append(o)}category.value='COURBE';
+ polys.append(text('p','Polynômes archivés : f(x) = coeff0 + coeff1·x + … + coeffN·xᴺ. Domaine limité à [X_min ; X_max]. Les coefficients affichés sont arrondis ; déplier une ligne pour leur précision complète.','muted'),text('p','La présence d’un polynôme de tolérance ne prouve pas l’atteinte de l’objectif sur tout le domaine. Les avertissements et plages de validité archivés ci-dessous restent indispensables.','warn'),fLabel,family,cLabel,category,list);
+ function show(){list.replaceChildren();const rows=catFiltered(d.polynomials,family.value,category.value);list.append(text('p',`${rows.length} polynôme(s) affiché(s) sur ${d.polynomials.length} archivés.`));for(const r of rows){const body=text('div','');body.append(catTable(['Degré','X_min','X_max','R²'],[[r.Degree,catFormat(r.X_min),catFormat(r.X_max),catFormat(r.R2)]]),catTable(['Coefficient','Valeur'],Array.from({length:r.Degree+1},(_,i)=>['coeff'+i,catFormat(r['coeff'+i])])),catRaw(r));list.append(catGroup(`${catStats[r.Stat]||r.Stat} [${r.Stat}] — ${r.Torque_Basis==='BOTH'?'Commun aux deux modes':r.Torque_Basis||'TOTAL'}`,body))}if(!rows.length)list.append(text('p','Aucun polynôme archivé pour ce filtre. Aucune borne manquante n’est reconstituée.','muted'));
+ const sheet=families.find(([key])=>key===family.value)?.[1].Compute_Sheet;
+ const warnings=d.warnings.filter(r=>!sheet||!r.Feuille||r.Feuille===sheet),tol=d.tolerance.filter(r=>!sheet||!r.Feuille||r.Feuille===sheet);
+ list.append(text('h3','Avertissements de tolérance'),catRecords(warnings,'Aucun avertissement archivé pour cette feuille ; cela ne constitue pas une certification.'),catGroup('Méthodes et plages de validité',catRecords(tol,'Détails de tolérance non archivés pour cette feuille.')))}
+ family.onchange=show;category.onchange=show;show();box.append(catGroup('Catalogue des polynômes et validité statistique',polys,true));
+ box.append(catGroup('Autofrein issu du DIAG',catRecords(d.selflock,'Synthèse d’autofrein non archivée.')));
+ box.append(catGroup('Essais et fichiers d’origine',catTable(['Essai','Fichier','Retenu','Décision DIAG','Chemin d’origine'],d.sources.map(r=>[r.Trial_ID||'—',r.Source_Name||'—',catFormat(r.Accepted_For_ARCTA),r.DIAG_Decision||'—',r.Original_Source_Path||'Non archivé']))));
+ box.append(catRaw({run:d.run,date:d.created_at,copies:d.copies,excel_sha256:d.excel_sha256,origins:d.origins},'Provenance des exports'),catRaw(d,'Instantané complet — valeurs et unités archivées'));
+ box.scrollIntoView({behavior:'smooth',block:'start'})
+}
+
+catStats.CI95_LOW = catStats.MEAN_CI_LOW;
+catStats.CI95_HIGH = catStats.MEAN_CI_HIGH;
+
+// 64G3A_MEAN_CI_NAMES

@@ -1,0 +1,229 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DABCTA — Capitalisation</title>
+<style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#183248;background:#f3f6f8}*{box-sizing:border-box}body{margin:0}aside{position:fixed;inset:0 auto 0 0;width:210px;background:#183248;color:white;padding:28px 18px}aside a{display:block;color:inherit;text-decoration:none;padding:12px 0;border-bottom:1px solid #ffffff24}aside strong{font-size:25px}main{margin-left:210px;padding:28px;max-width:1500px}h1{margin-top:0}h2{font-size:20px}h3{font-size:17px}section,.card{background:white;border:1px solid #d9e2e7;border-radius:10px;padding:20px;margin-bottom:20px}label{display:block;margin:12px 0 5px;font-weight:600}input,select,textarea,button{font:inherit;padding:10px;border:1px solid #a8b8c3;border-radius:5px}input,textarea,select{width:100%;background:white}button{cursor:pointer;background:white;color:#183248}button.primary{background:#165c78;color:white;border-color:#165c78}button:disabled{opacity:.5;cursor:default}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.muted{color:#596e7e;font-size:14px}.badge{background:#e0f1eb;color:#15543e;padding:6px 12px;border-radius:20px}.status{padding:12px;border-radius:6px;background:#e7eff5;white-space:pre-wrap}.error{background:#ffe8e6;color:#912b20}.warn{background:#fff3d9;padding:12px}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px;border-bottom:1px solid #e0e7eb;vertical-align:top;overflow-wrap:anywhere}th{background:#f4f7f9}small{display:block}details{margin:12px 0}summary{cursor:pointer}.selected{background:#e6f3f7}.path{overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere}#status{position:sticky;top:0;z-index:3;margin-bottom:18px}@media(max-width:900px){aside{position:static;width:auto}aside a{display:inline-block;margin-right:16px}main{margin:0;padding:16px}.grid{grid-template-columns:1fr}}
+#campaign-list table {
+    min-width: 760px;
+}
+#campaign-list th,
+#campaign-list td {
+    overflow-wrap: normal;
+    word-break: normal;
+}
+#campaign-list th:not(:nth-child(5)),
+#campaign-list td:not(:nth-child(5)) {
+    white-space: nowrap;
+}
+#campaign-list td:nth-child(5) {
+    min-width: 240px;
+    white-space: normal;
+}
+/* 64F2: one task per route, no stacked workspaces. */
+[hidden]{display:none!important}body[data-workspace] main>section{display:none}
+body[data-workspace="base"] #base,body[data-workspace="base"] #base-preview,body[data-workspace="base"] #work-choices,
+body[data-workspace="ajouter"] #sources,body[data-workspace="ajouter"] #candidates,body[data-workspace="ajouter"] #review,body[data-workspace="ajouter"] #business-gate,
+body[data-workspace="reconcilier"] #grouping,body[data-workspace="reconcilier"] #reconcile-help,
+body[data-workspace="retraiter"] #active,body[data-workspace="retraiter"] #catalogue,body[data-workspace="retraiter"] #rework-form,body[data-workspace="retraiter"] #rework-packets,
+body[data-workspace="sas"] #sas-existing,body[data-workspace="sas"] #business-variant,body[data-workspace="sas"] #business-gate,body[data-workspace="sas"] #catalogue,
+body[data-workspace="journal"] #history{display:block}
+body[data-workspace="base"] main{max-width:1400px;padding:18px 24px}body[data-workspace="base"] section{padding:12px 16px;margin-bottom:12px}
+body[data-workspace="base"] h2{margin:0 0 8px}body[data-workspace="base"] td,body[data-workspace="base"] th{padding:6px 9px}
+body[data-workspace="base"] #status{padding:8px;margin-bottom:12px}body[data-workspace="base"] label{margin-top:0}
+#base>.grid{grid-template-columns:1fr}#base-preview table{table-layout:fixed}#base-preview td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#work-choices .toolbar{display:grid;grid-template-columns:repeat(3,1fr)}#work-choices button{text-align:left;min-height:65px}
+aside a[aria-current="page"]{background:#256078;border-radius:5px;padding-left:8px}#workspace-caption{margin:4px 0 14px}
+@media(max-width:900px){#work-choices .toolbar{grid-template-columns:1fr}body[data-workspace="base"] main{padding:12px}}
+body[data-workspace="reconcilier"] #reconciliation,body[data-workspace="reconcilier"] #aggregate-review{display:block}
+body[data-workspace="retraiter"] #exclusions,body[data-workspace="retraiter"] #revision-form{display:none!important}
+</style>
+<aside><strong>DABCTA</strong><p>Capitalisation des campagnes</p><a href="/dabcta/arcta">Retour à ARCTA</a><a href="#base">Base et sources</a><a href="#candidates">Candidats à examiner</a><a href="#active">Résultats et variantes</a><a href="#grouping">Regroupement de campagnes</a><a href="#history">Journal des décisions</a></aside>
+<main><div class="toolbar"><h1>DABCTA</h1><span id="revision" class="badge">Aucune base ouverte</span></div><p>Une référence active par campagne. Des décisions conservées et révisables.</p><div id="status" role="status" aria-live="polite" class="status">Ouvrir une base existante ou en créer une.</div>
+<section id="base"><h2>Base et sources</h2><div class="grid"><div><label for="database">Fichier de base SQLite</label><input id="database"><p class="muted">Le fichier sera créé s’il n’existe pas.</p></div><div><label for="root">Dossier ARCTA_OUTPUTS à parcourir</label><input id="root"><p class="muted">Les anciens exports incomplets sont signalés et laissés de côté.</p></div></div><div class="toolbar"><button id="open" class="primary">Ouvrir / créer la base</button><button id="scan" data-connected>Inventorier les runs</button><button id="refresh" data-connected>Actualiser</button></div><details id="errors"><summary>Exports non importables</summary><div id="error-list"></div></details></section>
+<section id="candidates"><h2>Candidats à examiner</h2><p id="counts" class="muted">Lancer l’inventaire après ouverture de la base.</p><div id="candidate-list" class="scroll"></div></section>
+<section id="review" hidden><h2>Comparer et décider</h2><div id="candidate-info"></div><div id="decision-form"><div class="grid"><div><label for="mode">Décision</label><select id="mode"><option value="">Choisir explicitement…</option><option value="keep">Même campagne — conserver le résultat actif</option><option value="replace">Même campagne — retenir ce candidat</option><option value="new">Créer une campagne distincte</option><option value="ignore">Écarter ce candidat</option></select></div><div id="campaign-box"><label for="campaign">Campagne de rattachement</label><select id="campaign"></select></div></div><div id="label-box" hidden><label for="label">Nom de la nouvelle campagne</label><input id="label"><p class="muted">À utiliser pour une campagne expérimentale distincte, pas pour une simple relance.</p></div><div id="comparison"></div><label for="reason">Motif de la décision</label><textarea id="reason" rows="2" placeholder="Pourquoi retenir ou écarter cette analyse ?"></textarea><p><button id="decide" class="primary">Enregistrer la décision</button></p></div></section>
+<section id="active"><h2>Résultats actifs et variantes archivées</h2><div id="campaign-list"></div><div id="exclusions"></div><div id="revision-form" hidden class="card"><h3 id="revision-title"></h3><label for="revision-reason">Motif de révision</label><textarea id="revision-reason" rows="2"></textarea><p><button id="apply-revision" class="primary">Confirmer ce changement</button> <button id="cancel-revision">Annuler</button></p></div></section>
+<section id="history"><h2>Journal continu de la base</h2><p class="muted">Les dates sont affichées dans le fuseau du navigateur. L’auteur correspond au compte système utilisé par le serveur.</p><div id="journal" class="scroll"></div></section></main>
+<script>
+const $=id=>document.getElementById(id);let token=null,state=null,selected=null,pending=null,busy=false;
+const percentages=new Set(['MEAN_CI_CONF_LEVEL','THR_RATIO_DEFAULT','ISO_TOL_P_CONTENT','ISO_TOL_CONF_LEVEL','ISO_MEDIAN_CONF_LEVEL','NORMALITY_ALPHA']);
+function text(tag,value,cls){const n=document.createElement(tag);n.textContent=value;if(cls)n.className=cls;return n}
+function fmt(v,key=''){if(v===null||v===undefined)return 'Non renseigné';if(Array.isArray(v))return v.map(x=>fmt(x)).join(' ');if(typeof v==='number')return percentages.has(key)?`${Number((v*100).toPrecision(6))} %`:String(v);return typeof v==='object'?JSON.stringify(v):String(v)}
+function date(v){const d=new Date(v);return isNaN(d)?v:d.toLocaleString('fr-FR')}
+function table(headers,rows){const t=document.createElement('table'),h=document.createElement('tr');headers.forEach(x=>h.append(text('th',x)));t.append(h);rows.forEach(r=>{const tr=document.createElement('tr');r.forEach(x=>{const td=document.createElement('td');x instanceof Node?td.append(x):td.textContent=fmt(x);tr.append(td)});t.append(tr)});return t}
+function button(label,handler){const b=text('button',label);b.type='button';b.addEventListener('click',handler);return b}
+function status(message,error=false){$('status').textContent=message;$('status').className='status'+(error?' error':'')}
+function controls(){document.querySelectorAll('button').forEach(b=>b.disabled=busy);document.querySelectorAll('[data-connected]').forEach(b=>b.disabled=busy||!token)}
+async function api(op,extra={}){const r=await fetch('/api/dabcta/'+op,{method:'POST',headers:{'Content-Type':'application/json','X-ARCTA-Local':'1'},body:JSON.stringify({token,revision:state?.revision,...extra})});const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:JSON.stringify(d.detail));return d}
+async function task(label,fn){if(busy)return;busy=true;controls();status(label);try{await fn()}catch(e){status(e.message,true)}finally{busy=false;controls()}}
+function params(v){const box=document.createElement('div');box.append(table(['Paramètre','Valeur'],Object.entries(v.settings).map(([k,val])=>[v.labels[k]||k,fmt(val,k)])));return box}
+function summary(v){const box=document.createElement('div');box.append(text('p',Object.values(v.identity).filter(Boolean).join(' / ')));box.append(text('p',`${date(v.date)} — ${v.count} essais retenus — ${v.polynomials.COURBE||0} courbes statistiques`));box.append(text('p',v.path,'muted path'));const d=document.createElement('details');d.append(text('summary','Paramètres et informations de campagne'),params(v),table(['Information','Valeur'],Object.entries(v.metadata).map(([k,val])=>[v.labels[k]||k,val])));box.append(d);return box}
+function candidate(){return state?.candidates.find(c=>c.key===selected)}
+const deltaLabels={MEAN_CI_CONF_LEVEL:"Confiance IC moyenne",THR_RATIO_DEFAULT:'Seuil tension',ISO_TOL_P_CONTENT:'Proportion tolérance',ISO_TOL_CONF_LEVEL:'Confiance tolérance',ISO_MEDIAN_CONF_LEVEL:'Confiance médiane',NORMALITY_ALPHA:'Seuil normalité',NORMALITY_MIN_N:'Effectif minimal normalité',report_number:'Rapport',test_date:'Date essais',sample_count:'Effectif déclaré',screw_lot:'Lot vis',nut_lot:'Lot écrou',washer_lot:'Lot rondelle',operator_name:'Opérateur',bench_reference:'Banc',sensor_reference:'Capteur'};
+function deltaValue(v,key){if(Array.isArray(v))return v.map(x=>catFormat(x)).join(' ');return typeof v==='number'&&percentages.has(key)?catFormat(v*100)+' %':catFormat(v)}
+function deltaSummary(diff,ref){if(!diff)return 'Référence active absente';const parts=diff.fields.map(r=>{let a=deltaValue(r.before,r.key),b=deltaValue(r.after,r.key);if(a===b&&JSON.stringify(r.before)!==JSON.stringify(r.after)){a=JSON.stringify(r.before);b=JSON.stringify(r.after);return `${deltaLabels[r.key]||r.label} : ${a} → ${b} (valeurs exactes archivées)`}if(a.endsWith(' %')&&b.endsWith(' %'))a=a.slice(0,-2);return `${deltaLabels[r.key]||r.label} ${a} → ${b}`});if(diff.removed.length||diff.added.length)parts.push(`Essais −${diff.removed.length} / +${diff.added.length}`);if(diff.mapping_changed)parts.push('Mapping modifié');if(diff.result_conflict)parts.push('CONFLIT : mêmes entrées, résultats différents');return `vs V${ref} : `+(parts.length?parts.join(' ; '):'aucun écart dans les entrées comparées')}
+function deltaLine(diff,ref){const p=text('p',deltaSummary(diff,ref));p.style.cssText='white-space:normal;overflow-wrap:anywhere;margin:8px 0;padding:6px 0';p.tabIndex=0;p.title=p.textContent;return p}
+function qualificationNotice(c,mode,box){const entries=Object.entries(c.qualification||{}).filter(([id,rows])=>rows.length);if(!entries.length)return;const active=['keep','replace'].includes(mode)?entries.filter(([id])=>id===$('campaign').value):entries;if(!active.length)return;box.append(text('p','Rapport, date ou lots différents : préciser s’il s’agit d’une correction documentaire de la même campagne ou d’une campagne expérimentale distincte.','warn'));for(const [id,rows] of active){box.append(text('p','Comparaison avec la campagne '+id),table(['Information','Campagne enregistrée','Cet export'],rows.map(r=>[deltaLabels[r.key]||r.key,deltaValue(r.before,r.key),deltaValue(r.after,r.key)])))}if(['keep','replace'].includes(mode))box.append(text('p','En confirmant « Même campagne », ces informations seront rectifiées dans la fiche campagne et historisées. Les instantanés des runs restent inchangés.','muted'))}
+function compare(){const c=candidate();if(!c)return;const mode=$('mode').value;$('campaign-box').hidden=!['keep','replace'].includes(mode);$('label-box').hidden=mode!=='new';const box=$('comparison');box.replaceChildren();qualificationNotice(c,mode,box);if(!['keep','replace'].includes(mode))return;const id=$('campaign').value,cp=state.campaigns.find(x=>String(x.id)===id),diff=c.comparisons[id];if(!cp){box.append(text('p','Choisir une campagne ou créer une campagne distincte.','warn'));return}box.append(text('p',`Sens de lecture : référence active V${cp.active} → candidat.`,'muted'),deltaLine(diff,cp.active));if(!diff)return;const details=document.createElement('details');details.append(text('summary','Détail des écarts'));if(diff.fields.length)details.append(table(['Paramètre','Référence active','Candidat'],diff.fields.map(r=>[deltaLabels[r.key]||r.label,deltaValue(r.before,r.key),deltaValue(r.after,r.key)])));if(diff.removed.length||diff.added.length)details.append(text('p','Essais retirés : '+(diff.removed.join(', ')||'aucun')),text('p','Essais ajoutés : '+(diff.added.join(', ')||'aucun')));if(diff.mapping_changed)details.append(text('p','Affectations rôle/colonne différentes.'));if(diff.result_conflict)details.append(text('p','Entrées archivées identiques, résultats différents : conflit à examiner.','warn'));box.append(details)}
+function variantActions(v,cp){const box=text('div','','toolbar');box.append(button('Consulter',()=>viewCatalogue(v.id)));if(v.id!==cp.active&&!cp.replaced_by&&!cp.parents?.length)box.append(button('Rendre active',()=>revise('activate',{variant:v.id},`Activer la variante ${v.id} de « ${cp.label} »`)));return box}
+function review(){const c=candidate();$('review').hidden=!c;if(!c)return;$('candidate-info').replaceChildren(summary(c));$('decision-form').hidden=c.status!=='À examiner';$('campaign').replaceChildren();c.compatible.forEach(id=>{const cp=state.campaigns.find(x=>x.id===id),o=text('option',`${id} — ${cp.label}`);o.value=id;$('campaign').append(o)});$('mode').value=Object.values(c.qualification||{}).some(x=>x.length)?'':(c.compatible.length?'keep':'new');$('label').value=[c.identity.report_number,c.identity.configuration_id].filter(Boolean).join(' — ');$('reason').value='';compare()}
+function revise(op,data,title){pending={op,data};$('revision-title').textContent=title;$('revision-reason').value='';$('revision-form').hidden=false;$('revision-form').scrollIntoView({behavior:'smooth',block:'center'})}
+const actions={CREATE_DATABASE:'Création de la base',ACTIVATE:'Première référence',REPLACE:'Remplacement',KEEP_EXISTING:'Référence conservée',KNOWN_VARIANT:'Variante déjà arbitrée',IGNORE:'Exclusion',DEFER:'Décision reportée',REVISE_SELECTION:'Révision de la sélection',REOPEN_EXCLUSION:'Réouverture d’une exclusion'};
+function render(){catHide();const s=state;$('revision').textContent=`Révision ${s.revision} · ${s.campaigns.length} campagne(s)`;$('counts').textContent=`${s.candidates.filter(c=>c.status==='À examiner').length} candidat(s) à examiner sur ${s.candidates.length} run(s) lisible(s).`;$('error-list').replaceChildren(...s.errors.map(e=>text('p',`${e.manifest} — ${e.error}`,'path')));$('errors').hidden=!s.errors.length;$('errors').open=!!s.errors.length;$('errors').querySelector('summary').textContent=`Exports invalides ou non importables (${s.errors.length})`;$('candidate-list').replaceChildren(table(['Date','Configuration','Essais','État',''],s.candidates.map(c=>[date(c.date),Object.values(c.identity).filter(Boolean).join(' / '),c.count,c.status+(c.business&&s.business_gate?' · '+businessLabels[c.business.status]:''),button('Examiner',()=>{selected=c.key;review();$('review').scrollIntoView({behavior:'smooth'})})])));const list=$('campaign-list');list.replaceChildren();const archives=document.createElement('details');archives.append(text('summary','Campagnes parentes archivées'));s.campaigns.forEach(cp=>{const box=document.createElement('div');box.className='card';box.append(text('h3',`${cp.id} — ${cp.label}`),text('p',`Fiche campagne : rapport ${cp.metadata.report_number||'non renseigné'} · date ${cp.metadata.test_date||'non renseignée'} · lots vis / écrou / rondelle : ${cp.metadata.screw_lot||'—'} / ${cp.metadata.nut_lot||'—'} / ${cp.metadata.washer_lot||'—'}`,'muted'));box.append(text('p','Écarts : référence active → variante comparée.','muted'),catTable(['Variante','Date','Essais','État','Écarts à la référence active','Actions'],cp.variants.map(v=>[v.id,date(v.date),v.count,v.id===cp.active?(cp.eligible?'Active':'Référence non qualifiée'):'Archivée',v.id===cp.active?'Référence de comparaison':deltaLine(v.comparison,cp.active),variantActions(v,cp)])));if(cp.replaced_by){box.prepend(text('p',`Remplacée par le regroupement ${cp.replaced_by} — hors exploitation courante`,'warn'));archives.append(box)}else{if(cp.parents?.length)box.prepend(text('p','Regroupement des campagnes '+cp.parents.join(', '),'muted'));list.append(box)}});if(archives.children.length>1)list.append(archives);if(!s.campaigns.length)list.append(text('p','Aucune campagne capitalisée.'));$('exclusions').replaceChildren(...s.excluded.map(x=>{const p=document.createElement('p');p.append(text('span',`Run exclu : ${x.run_id} `),button('Réexaminer',()=>revise('reopen',{run:x.run_id},'Réouvrir cette exclusion et ses copies équivalentes')));return p}));$('journal').replaceChildren(table(['Révision','Date','Auteur','Action','Décision'],s.journal.map(j=>[j.revision,date(j.utc),j.actor,actions[j.action]||j.action,`Campagne ${j.detail.campaign??'—'} · variante ${j.detail.selected??j.detail.candidate??'—'} · ${j.detail.reason||''}${j.detail.qualification==='same'?' · Informations campagne rectifiées':j.detail.qualification==='new'?' · Campagne distincte confirmée':''}`])));review();renderGrouping(s);controls()}
+$('open').onclick=()=>task('Ouverture de la base…',async()=>{const d=await api('open',{database:$('database').value,root:$('root').value});token=d.token;state=d;localStorage.setItem('dabcta_paths',JSON.stringify({database:d.database,root:d.root}));render();status('Base ouverte. Lancer l’inventaire pour examiner les nouveaux runs.')});
+$('scan').onclick=()=>task('Lecture des exports et comparaison avec la base…',async()=>{state=await api('scan');render();status('Inventaire terminé. Aucune décision appliquée automatiquement.')});
+$('refresh').onclick=()=>task('Actualisation…',async()=>{state=await api('status');render();status('Base actualisée.')});
+$('mode').onchange=compare;$('campaign').onchange=compare;
+$('decide').onclick=()=>task('Enregistrement de la décision…',async()=>{state=await api('decide',{candidate:selected,mode:$('mode').value,campaign:$('campaign').value,label:$('label').value,reason:$('reason').value,qualification:$('mode').value==='new'?'new':(['keep','replace'].includes($('mode').value)?'same':null)});render();status('Décision enregistrée et historisée.')});
+$('apply-revision').onclick=()=>task('Enregistrement de la révision…',async()=>{if(!pending)return;state=await api(pending.op,{...pending.data,reason:$('revision-reason').value});pending=null;$('revision-form').hidden=true;render();status('Choix révisé. L’historique est conservé.')});
+$('cancel-revision').onclick=()=>{pending=null;$('revision-form').hidden=true};
+async function loadDefaults() {
+  try {
+    let d = await (await fetch('/api/dabcta/defaults')).json();
+    try {
+      d = {
+        ...d,
+        ...JSON.parse(localStorage.getItem('dabcta_paths') || '{}')
+      };
+    } catch (e) {}
+    $('database').value = d.database;
+    $('root').value = d.root;
+  } catch (e) {
+    status(e.message, true);
+  }
+  controls();
+}</script><script src="/dabcta/catalogue.js"></script><script src="/dabcta/grouping.js"></script><script src="/dabcta/reanalysis.js"></script><script src="/dabcta/capitalization.js"></script><script src="/dabcta/qualification.js"></script><script src="/dabcta/workflow.js"></script><script src="/dabcta/reconciliation.js"></script><script src="/dabcta/rework.js"></script><script src="/dabcta/consultation.js"></script><script src="/dabcta/run_presentation.js"></script><!-- BEGIN DABCTA 64F8 -->
+<style>
+body{--accent:#175a85;--tint:#edf5fb;color:#172d40;background:#edf1f5}
+body[data-workspace="sas"]{--accent:#684095;--tint:#f4effa}
+body[data-workspace="reconcilier"]{--accent:#874912;--tint:#fff5e9}
+body[data-workspace="retraiter"]{--accent:#86405b;--tint:#fff0f5}
+body[data-workspace="consulter"]{--accent:#17634e;--tint:#edf8f3}
+aside{background:#142c40;overflow-y:auto}
+aside a{padding:12px 10px;margin:4px 0;border-radius:6px}
+aside a[aria-current="page"]{background:#fff;color:#142c40;font-weight:700;border-left:6px solid var(--accent)}
+main>h1{border-left:7px solid var(--accent);padding:12px 18px;background:var(--tint);border-radius:6px}
+main>section{border-color:#b7c5d0;border-top:4px solid var(--accent);box-shadow:0 2px 6px #142c4010}
+h2{color:var(--accent)}
+th{background:#dce5ed;color:#172d40;font-weight:700;white-space:normal!important}
+td{border-bottom-color:#b7c5d0}tr:nth-child(even){background:#f4f7fa}
+.muted{color:#455b6b}.warn{color:#663b00;background:#fff2ce;border-left:5px solid #946000}
+button{border-color:#657b8d;min-height:42px;font-weight:600}
+button:hover:not(:disabled){box-shadow:0 0 0 2px var(--accent)}
+button.primary,#scan,#open{background:var(--accent);border-color:var(--accent);color:#fff}
+:where(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #111827;outline-offset:3px;box-shadow:0 0 0 6px #fff}
+summary{padding:10px;background:#e8eef4;color:#203b50;font-weight:600;border-radius:5px}
+#status{border:1px solid #8aa2b5;color:#172d40;background:#e7eff5}
+#status.error{color:#8b2222;background:#ffeded;border-color:#a93434}
+#sources-summary .toolbar{margin-top:16px}
+.sas-chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.sas-chip{display:inline-block;padding:8px 12px;border-radius:6px;font-weight:600;border:1px solid currentColor}
+.sas-pending{color:#483078;background:#f1eafb}.sas-next{color:#714000;background:#fff0d2}
+.sas-history{color:#415363;background:#edf1f5}.sas-error{color:#8b2222;background:#ffeded}
+#candidate-list td:first-child{width:38%}#candidate-list td:nth-child(2){width:24%}
+#candidate-list .run-action-row td{background:#eef3f8;border-bottom:3px solid #b7c5d0}
+body[data-workspace="ajouter"] #candidates,body[data-workspace="ajouter"] #review,
+body[data-workspace="ajouter"] #business-gate{display:none}
+body[data-workspace="ajouter"] #sources-summary,
+body[data-workspace="sas"] #candidates,body[data-workspace="sas"] #review{display:block}
+#refresh{margin-bottom:18px}
+</style>
+<script>
+// 64F8 : un inventaire, un sas, une décision métier par run.
+flowPages.ajouter=['Sources ARCTA','Choisir les sources, inventorier, puis poursuivre dans le sas métier.'];
+flowPages.sas=['Sas métier — examiner et décider','Examiner chaque run : accepter pour capitalisation, demander un retraitement ou rejeter.'];
+businessLabels.REWORK='Retraitement ARCTA demandé';
+const sasSections={pending:['À examiner','sas-pending'],next:['Acceptés — suite à finaliser','sas-next'],conflict:['Conflits d’identité','sas-error'],history:['Déjà orientés / traités','sas-history']};
+function sasBucket(c){
+  if(c.status==='Conflit d’identité du run')return 'conflict';
+  if(!runNeedsAction(c))return 'history';
+  return c.business?.eligible?'next':'pending';
+}
+function sasCounts(){const n={pending:0,next:0,conflict:0,history:0};for(const c of state.candidates)n[sasBucket(c)]++;return n}
+function sasChips(n){const row=text('div','','sas-chips');for(const [k,[label,cls]] of Object.entries(sasSections))row.append(text('span',`${label} : ${n[k]}`,'sas-chip '+cls));return row}
+function sasOpen(c){selected=c.key;flowGo('sas');review();$('review').scrollIntoView({behavior:'smooth'})}
+const sasAdmissionBefore=runAdmission;
+runAdmission=function(c){return sasBucket(c)==='pending'?'En attente de décision métier':sasAdmissionBefore(c)};
+renderRunQueue=function(){
+  if(!state)return;
+  const n=sasCounts(),box=$('candidate-list');box.replaceChildren();
+  $('candidates').querySelector('h2').textContent='Runs du sas métier';
+  $('counts').textContent=`${state.candidates.length} runs lisibles = ${n.pending} à examiner + ${n.next} acceptés à finaliser + ${n.conflict} conflits + ${n.history} déjà orientés / traités.`;
+  for(const [kind,[label,cls]] of Object.entries(sasSections)){
+    const items=state.candidates.filter(c=>sasBucket(c)===kind);if(!items.length)continue;
+    const host=kind==='history'?document.createElement('details'):text('div','');
+    host.append(text(kind==='history'?'summary':'h3',`${label} (${items.length})`));
+    const rows=items.map(c=>{
+      const action=kind==='next'&&(c.reanalysis||c.reconciliation?.length)?button('Réconcilier',()=>reconcileGo(c)):button(kind==='history'?'Consulter':kind==='next'?'Finaliser l’intégration':'Examiner',()=>sasOpen(c));
+      return [runCaption(c),text('span',businessLabels[c.business?.status]||'À examiner','sas-chip '+cls),runAdmission(c),action];
+    });
+    host.append(table(['Run ARCTA','Décision métier','Suite / situation','Actions'],rows));box.append(host);
+  }
+  if(!state.candidates.length)box.append(text('p','Aucun run inventorié dans cette session.'),flowLink('Choisir les sources et lancer l’inventaire','ajouter'));
+};
+const sasReviewBefore=review;
+review=function(){
+  if(flowPage==='ajouter'&&candidate()){flowPage='sas';history.pushState({},'','/dabcta/sas')}
+  sasReviewBefore();
+  const c=candidate();
+  if(c&&sasBucket(c)==='next'){
+    // Une acceptation acquise n’est pas révisée dans le flux d’intégration.
+    $('candidate-info').querySelectorAll('.card').forEach(p=>{if(p.querySelector('textarea'))p.remove()});
+    $('review').querySelector('h2').textContent='Accepté métier — finaliser la suite';
+  }
+  flowApply();
+};
+const sasExistingBefore=renderSasExisting;
+renderSasExisting=function(){
+  sasExistingBefore();const box=$('sas-existing'),d=document.createElement('details');
+  d.append(text('summary','Réviser volontairement une qualification déjà enregistrée'));
+  while(box.firstChild)d.append(box.firstChild);box.append(d);
+};
+function sasSummary(){
+  let box=$('sources-summary');if(!box){box=text('section','');box.id='sources-summary';$('sources').after(box)}
+  box.replaceChildren(text('h2','Résultat du dernier inventaire'));
+  if(!state)return;
+  const n=sasCounts();
+  box.append(text('p',`${state.candidates.length} runs lisibles · ${state.errors.length} exports refusés (détails ci-dessus).`),sasChips(n));
+  box.append(text('p','L’inventaire recense les exports. Il ne vaut pas acceptation métier. Actualiser la base ne relit pas le dossier source.','muted'));
+  const b=button(`Ouvrir le sas métier — ${n.pending+n.next+n.conflict} suites en attente`,()=>flowGo('sas'));b.className='primary';box.append(b);
+  const gate=$('business-gate');
+  if(state.business_gate){
+    gate.replaceChildren(text('h2','Décision métier sur les runs inventoriés'),sasChips(n),text('p','Accepté ne signifie pas nécessairement intégré : une réconciliation peut rester à effectuer. Les décisions et leurs références documentaires sont conservées au journal.'));
+  }else{
+    // Retire aussi l’ancien raccourci manuel d’inventaire, si installé.
+    gate.querySelectorAll('button').forEach(b=>{if(b.textContent.includes('Inventorier'))b.remove()});
+  }
+  $('candidates').before(gate);$('candidates').after($('review'));
+  $('review').after($('sas-existing'));
+}
+const sasFlowBefore=flowApply;
+flowApply=function(){
+  sasFlowBefore();
+  for(const b of $('work-choices').querySelectorAll('button')){
+    const color=b.textContent.startsWith('Ajouter')?'#175a85':b.textContent.startsWith('Réconcilier')?'#874912':'#86405b';
+    b.style.backgroundColor=color;b.style.borderColor=color;
+  }
+  const nav=document.querySelector('aside');
+  const a=nav.querySelector('[data-flow-page="ajouter"]'),s=nav.querySelector('[data-flow-page="sas"]');
+  if(a)a.textContent='Sources ARCTA';if(s){s.textContent='Sas métier';a?.after(s)}
+};
+const sasRenderBefore=render;
+render=function(){sasRenderBefore();sasSummary();flowApply()};
+$('scan').textContent='Inventorier les runs du dossier';
+$('refresh').textContent='Actualiser la base (sans inventorier)';
+$('status').setAttribute('role','status');$('status').setAttribute('aria-live','polite');
+// Les liens de retour de réconciliation doivent ouvrir le sas.
+const sasReconcileBefore=renderReconciliation;
+renderReconciliation=function(){
+  sasReconcileBefore();
+  $('reconciliation')?.querySelectorAll('button').forEach(b=>{
+    if(b.textContent==='Revenir à sa qualification')b.onclick=()=>{const c=state.candidates.find(c=>c.key===reconcileSelected);if(c)sasOpen(c)};
+  });
+  $('reconciliation')?.querySelectorAll('p').forEach(p=>{
+    if(p.textContent==='Le candidat doit être accepté dans Ajouter avant capitalisation.')p.textContent='Le run doit être accepté dans le sas métier avant capitalisation.';
+  });
+};
+if(state)render();else flowApply();
+</script>
+<!-- END DABCTA 64F8 -->
+</html>

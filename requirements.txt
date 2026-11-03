@@ -1,0 +1,16 @@
+# ARCTA Web — release autonome
+# Python 3.12.x requis
+fastapi
+uvicorn
+numpy
+pandas
+scipy
+matplotlib
+openpyxl
+xlrd
+pillow
+reportlab
+pymupdf
+pypdfium2
+python-multipart
+jinja2

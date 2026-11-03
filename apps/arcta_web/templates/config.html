@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>CONFIG — ARCTA Web</title>
+
+    <style>
+        :root {
+            font-family:
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f6f8;
+            color: #18212b;
+        }
+
+        header {
+            background: white;
+            border-bottom: 1px solid #dce2e8;
+            padding: 1rem 2rem;
+        }
+
+        main {
+            max-width: 1250px;
+            margin: auto;
+            padding: 1.5rem;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #dce2e8;
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .badge {
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: #eef2f6;
+        }
+
+        .ready {
+            background: #e6f5eb;
+        }
+
+        .warning {
+            background: #fff4dd;
+            border: 1px solid #f0d28b;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin-bottom: 0.6rem;
+        }
+
+        .message {
+            background: #e8f1fb;
+            border: 1px solid #aec9e8;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin-bottom: 0.8rem;
+        }
+
+        details {
+            margin-bottom: 1rem;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 650;
+            font-size: 1.05rem;
+            padding: 0.6rem 0;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(300px, 1fr)
+                );
+            gap: 1rem;
+        }
+
+        .field-card {
+            border: 1px solid #dce2e8;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .field-title {
+            font-weight: 650;
+            margin-bottom: 0.2rem;
+        }
+
+        .field-key {
+            font-size: 0.8rem;
+            color: #6b7785;
+            margin-bottom: 0.8rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-top: 0.7rem;
+            margin-bottom: 0.2rem;
+            color: #46515c;
+        }
+
+        input,
+        select,
+        textarea {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 0.55rem;
+            border: 1px solid #bec7d0;
+            border-radius: 6px;
+            background: white;
+        }
+
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .meta {
+            font-size: 0.82rem;
+            color: #64717e;
+            margin-top: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .actions {
+            margin-top: 0.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        button,
+        .button {
+            display: inline-block;
+            padding: 0.6rem 0.9rem;
+            border-radius: 6px;
+            border: 1px solid #9ca8b3;
+            background: white;
+            cursor: pointer;
+            text-decoration: none;
+            color: #18212b;
+        }
+
+        button.primary {
+            background: #263746;
+            color: white;
+            border-color: #263746;
+        }
+
+        button.danger {
+            border-color: #c88181;
+        }
+
+        .source-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        footer {
+            color: #687581;
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+
+        .workflow-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .workflow-nav a { padding: 8px 12px; border: 1px solid #aeb7c0; border-radius: 6px; background: white; color: #20252b; text-decoration: none; }
+        .workflow-nav a.active { background: #24364b; border-color: #24364b; color: white; }
+    </style>
+    <link rel="stylesheet" href="/static/arcta.css">
+</head>
+
+<body class="workflow-page">
+
+<header>
+    <strong>ARCTA Web — CONFIG campagne</strong>
+</header>
+
+<main>
+    <nav class="workflow-nav" aria-label="Parcours campagne">
+        <a href="/">Accueil</a>
+        <a class="active" href="/sessions/{{ session.session_id }}/config">CONFIG</a>
+        <a href="/sessions/{{ session.session_id }}/mapping">Mapping</a>
+        <a href="/sessions/{{ session.session_id }}/diag">DIAG</a>
+        <a href="/sessions/{{ session.session_id }}/campaign">Exécution</a>
+    </nav>
+
+    <h1>
+        Vérification des données d'entrée
+    </h1>
+
+    <div class="panel">
+
+        <div class="summary">
+
+            <span class="badge">
+                {{ summary.field_count }}
+                paramètres
+            </span>
+
+            <span class="badge">
+                État :
+                <strong>
+                    {{ session_config.status }}
+                </strong>
+            </span>
+
+            <span class="badge">
+                Sauvegardée :
+                {{ session_config.updated_at }}
+            </span>
+
+            <span class="badge">
+                {{ summary.to_confirm|length }}
+                à confirmer
+            </span>
+
+            <span class="badge">
+                {{ summary.missing_required|length }}
+                obligatoires manquants
+            </span>
+
+            {% if ready %}
+                <span class="badge ready">
+                    CONFIG prête
+                </span>
+            {% else %}
+                <span class="badge">
+                    CONFIG à compléter
+                </span>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    {% if message %}
+        <div class="message">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    {% for warning in warnings %}
+        <div class="warning">
+            {{ warning }}
+        </div>
+    {% endfor %}
+
+    <div class="panel">
+
+        <strong>
+            Source de préremplissage CONFIG
+        </strong>
+
+        <p>
+            {% if template_source %}
+                Source utilisée :
+                <strong>
+                    {{ template_source.original_name }}
+                </strong>
+            {% else %}
+                Aucune source CONFIG actuellement utilisée.
+                La saisie manuelle reste possible.
+            {% endif %}
+        </p>
+
+        {% if xlsx_sources %}
+
+            <div class="source-list">
+
+                {% for source in xlsx_sources %}
+
+                    <a
+                        class="button"
+                        href="/sessions/{{ session.session_id }}/config?template_source_id={{ source.source_id }}"
+                    >
+                        Utiliser {{ source.original_name }}
+                    </a>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+    <form
+        method="post"
+        action="/sessions/{{ session.session_id }}/config"
+    >
+
+        {% for category in categories %}
+
+            <details open>
+
+                <summary>
+                    {{ category.name }}
+                </summary>
+
+                <div class="field-grid">
+
+                    {% for field in category.fields %}
+
+                        <div class="field-card">
+
+                            <div class="field-title">
+                                {{ field.label }}
+                            </div>
+
+                            <div class="field-key">
+                                {{ field.key }}
+                            </div>
+
+                            <label>
+                                Valeur
+                                {% if field.unit %}
+                                    ({{ field.unit }})
+                                {% endif %}
+                            </label>
+
+                            <input
+                                type="text"
+                                name="value__{{ field.key }}"
+                                value="{{ '' if field.value is none else field.value }}"
+                            >
+
+                            <label>
+                                Statut
+                            </label>
+
+                            <select
+                                name="status__{{ field.key }}"
+                            >
+
+                                {% for status in statuses %}
+
+                                    <option
+                                        value="{{ status }}"
+                                        {% if field.status == status %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ status }}
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                            <label>
+                                Commentaire
+                            </label>
+
+                            <textarea
+                                name="comment__{{ field.key }}"
+                            >{{ field.comment }}</textarea>
+
+                            <div class="meta">
+
+                                Source actuelle :
+                                <strong>
+                                    {{ field.source }}
+                                </strong>
+
+                                {% if field.source_ref %}
+                                    <br>
+                                    Référence :
+                                    {{ field.source_ref }}
+                                {% endif %}
+
+                                {% if field.original_value is not none %}
+                                    <br>
+                                    Valeur d'origine :
+                                    {{ field.original_value }}
+                                {% endif %}
+
+                                {% if field.original_source %}
+                                    <br>
+                                    Source d'origine :
+                                    {{ field.original_source }}
+                                {% endif %}
+
+                                {% if field.modified %}
+                                    <br>
+                                    <strong>
+                                        Valeur modifiée
+                                    </strong>
+                                {% endif %}
+
+                            </div>
+
+                            <div class="actions">
+
+                                {% if field.original_value is not none %}
+
+                                    <button
+                                        type="submit"
+                                        name="action"
+                                        value="restore:{{ field.key }}"
+                                    >
+                                        Restaurer
+                                    </button>
+
+                                {% endif %}
+
+                                {% if not field.required %}
+
+                                    <button
+                                        class="danger"
+                                        type="submit"
+                                        name="action"
+                                        value="remove:{{ field.key }}"
+                                    >
+                                        Supprimer
+                                    </button>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </details>
+
+        {% endfor %}
+
+        <div class="panel">
+
+            <h2>
+                Ajouter un paramètre
+            </h2>
+
+            <div class="field-grid">
+
+                <div>
+                    <label>Clé</label>
+                    <input
+                        name="new_key"
+                        placeholder="ex. revetement_vis"
+                    >
+                </div>
+
+                <div>
+                    <label>Libellé</label>
+                    <input
+                        name="new_label"
+                        placeholder="Revêtement vis"
+                    >
+                </div>
+
+                <div>
+                    <label>Catégorie</label>
+                    <input
+                        name="new_category"
+                        value="utilisateur"
+                    >
+                </div>
+
+                <div>
+                    <label>Valeur</label>
+                    <input
+                        name="new_value"
+                    >
+                </div>
+
+                <div>
+                    <label>Unité</label>
+                    <input
+                        name="new_unit"
+                    >
+                </div>
+
+                <div>
+                    <label>Type</label>
+
+                    <select
+                        name="new_value_type"
+                    >
+                        <option value="text">
+                            Texte
+                        </option>
+
+                        <option value="float">
+                            Nombre réel
+                        </option>
+
+                        <option value="int">
+                            Entier
+                        </option>
+
+                        <option value="bool">
+                            Booléen
+                        </option>
+                    </select>
+                </div>
+
+            </div>
+
+            <label>
+                <input
+                    type="checkbox"
+                    name="new_required"
+                    style="width:auto"
+                >
+                Paramètre obligatoire
+            </label>
+
+            <div class="actions">
+
+                <button
+                    type="submit"
+                    name="action"
+                    value="add"
+                >
+                    Ajouter le paramètre
+                </button>
+
+            </div>
+
+        </div>
+
+        <div class="panel">
+
+            <div class="actions">
+
+                <button
+                    type="submit"
+                    name="action"
+                    value="save_draft"
+                >
+                    Enregistrer le brouillon
+                </button>
+
+                <button
+                    class="primary"
+                    type="submit"
+                    name="action"
+                    value="validate"
+                >
+                    Valider CONFIG
+                </button>
+
+            </div>
+
+            <p class="meta">
+                Les données sont maintenant enregistrées
+                dans la session ARCTA côté serveur.
+            </p>
+
+        </div>
+
+    </form>
+
+    <footer>
+        Campagne :
+        {{ config.campaign_id }}
+    </footer>
+
+    {% with session_id=session.session_id %}
+        <!-- Paramètres statistiques : page Exécution, jalon 64G1. -->
+    {% endwith %}
+</main>
+
+
+</body>
+</html>

@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <title>ARCTA — Mapping des colonnes</title>
+
+    <style>
+        :root {
+            font-family:
+                Inter,
+                Segoe UI,
+                Arial,
+                sans-serif;
+
+            background: #f4f6f8;
+            color: #20252b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        main {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 28px;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 4px;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.15rem;
+        }
+
+        .subtitle {
+            margin-top: 0;
+            color: #5b6570;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #dce1e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(220px, 1fr)
+                );
+            gap: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        select,
+        button {
+            font: inherit;
+        }
+
+        select {
+            width: 100%;
+            min-height: 40px;
+            padding: 7px 9px;
+            border: 1px solid #bfc7cf;
+            border-radius: 6px;
+            background: white;
+        }
+
+        button {
+            min-height: 40px;
+            border-radius: 6px;
+            border: 1px solid #aeb7c0;
+            padding: 8px 14px;
+            cursor: pointer;
+            background: white;
+        }
+
+        button.primary {
+            background: #24364b;
+            color: white;
+            border-color: #24364b;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .status {
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-top: 14px;
+            background: #eef1f4;
+        }
+
+        .status.ok {
+            background: #e8f4eb;
+        }
+
+        .status.warning {
+            background: #fff5dd;
+        }
+
+        .status.error {
+            background: #fbe9e9;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns:
+                minmax(200px, 1fr)
+                minmax(260px, 2fr);
+            gap: 10px 18px;
+            align-items: center;
+        }
+
+        .role-name {
+            font-weight: 700;
+        }
+
+        .required {
+            font-size: 0.78rem;
+            font-weight: normal;
+            color: #666;
+        }
+
+        .columns-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .columns-table th,
+        .columns-table td {
+            text-align: left;
+            border-bottom: 1px solid #e2e6ea;
+            padding: 8px;
+        }
+
+        .columns-table th {
+            background: #f6f7f8;
+        }
+
+        .compatibility-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+        }
+
+        .compatibility-table th,
+        .compatibility-table td {
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid #e2e6ea;
+            padding: 8px;
+        }
+
+        .compatibility-table th {
+            background: #f6f7f8;
+        }
+
+        .pill {
+            display: inline-block;
+            border-radius: 99px;
+            padding: 3px 8px;
+            font-size: 0.78rem;
+            background: #e9edf1;
+        }
+
+        .pill.suggested {
+            background: #e8f4eb;
+        }
+
+        .pill.ambiguous,
+        .pill.conflict {
+            background: #fff0cf;
+        }
+
+        .pill.unrecognized {
+            background: #f1f1f1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (
+            max-width: 700px
+        ) {
+            main {
+                padding: 14px;
+            }
+
+            .role-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .workflow-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .workflow-nav a { padding: 8px 12px; border: 1px solid #aeb7c0; border-radius: 6px; background: white; color: #20252b; text-decoration: none; }
+        .workflow-nav a.active { background: #24364b; border-color: #24364b; color: white; }
+    </style>
+    <link rel="stylesheet" href="/static/arcta.css">
+</head>
+
+<body class="workflow-page">
+
+<main>
+    <nav class="workflow-nav" aria-label="Parcours campagne">
+        <a href="/">Accueil</a>
+        <a href="/sessions/{{ session_id }}/config">CONFIG</a>
+        <a class="active" href="/sessions/{{ session_id }}/mapping">Mapping</a>
+        <a href="/sessions/{{ session_id }}/diag">DIAG</a>
+        <a href="/sessions/{{ session_id }}/campaign">Exécution</a>
+    </nav>
+
+    <h1>Mapping des colonnes</h1>
+
+    <p class="subtitle">
+        Associer les colonnes d'essai aux grandeurs
+        utilisées par ARCTA.
+    </p>
+
+    <section class="card">
+
+        <h2>Source des essais</h2>
+
+        <div class="grid">
+
+            <div>
+                <label for="source-select">
+                    Fichier source
+                </label>
+
+                <select id="source-select">
+                    <option value="">
+                        — sélectionner —
+                    </option>
+
+                    {% for source in sources %}
+                    <option
+                        value="{{ source.source_id }}"
+                    >
+                        {{ source.filename }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="sheet-select">
+                    Feuille
+                </label>
+
+                <select
+                    id="sheet-select"
+                    disabled
+                >
+                    <option value="">
+                        —
+                    </option>
+                </select>
+            </div>
+
+        </div>
+
+        <div
+            id="source-status"
+            class="status"
+        >
+            Sélection automatique du fichier représentatif…
+        </div>
+
+    </section>
+
+
+<!-- 64G2: affectation après les contrôles -->
+
+
+    <section
+        id="compatibility-section"
+        class="card hidden"
+    >
+
+        <h2>Compatibilité de la campagne</h2>
+
+        <p>
+            Le mapping défini sur le fichier de
+            référence doit être applicable à tous
+            les essais de la campagne.
+        </p>
+
+        <div
+            id="compatibility-status"
+            class="status warning"
+        >
+            Le contrôle automatique démarrera dès que le mapping sera valide.
+        </div>
+
+        <table class="compatibility-table">
+
+            <thead>
+            <tr>
+                <th>Fichier</th>
+                <th>Feuille / en-tête</th>
+                <th>État</th>
+                <th>Colonnes manquantes</th>
+            </tr>
+            </thead>
+
+            <tbody id="compatibility-body">
+            </tbody>
+
+        </table>
+
+    </section>
+
+
+    <section
+        id="diagnostic-section"
+        class="card hidden"
+    >
+
+        <h2>Analyse des en-têtes</h2>
+
+        <table class="columns-table">
+
+            <thead>
+            <tr>
+                <th>Colonne source</th>
+                <th>Grandeur proposée</th>
+                <th>État</th>
+                <th>Score</th>
+            </tr>
+            </thead>
+
+            <tbody id="diagnostic-body">
+            </tbody>
+
+        </table>
+
+    </section>
+
+    <section
+        id="mapping-section"
+        class="card hidden"
+    >
+
+        <h2>Affectation des grandeurs</h2>
+
+        <p>
+            La proposition automatique peut être
+            corrigée avant validation.
+        </p>
+
+        <div class="role-grid">
+
+            <div class="role-name">
+                Couple de serrage T [N·m]
+                <span class="required">
+                    — obligatoire
+                </span>
+            </div>
+
+            <select
+                id="role-Xg"
+                data-role="Xg"
+            ></select>
+
+
+            <div class="role-name">
+                Couple transmis par le filetage T_th [N·m]
+            </div>
+
+            <select
+                id="role-Xt"
+                data-role="Xt"
+            ></select>
+
+
+            <div class="role-name">
+                Couple de frottement à l’appui T_b [N·m]
+            </div>
+
+            <select
+                id="role-Xh"
+                data-role="Xh"
+            ></select>
+
+
+            <div class="role-name">
+                Force de serrage F [N]
+                <span class="required">
+                    — obligatoire
+                </span>
+            </div>
+
+            <select
+                id="role-Y"
+                data-role="Y"
+            ></select>
+
+
+            <div class="role-name">
+                Angle de rotation Θ [°]
+            </div>
+
+            <select
+                id="role-A"
+                data-role="A"
+            ></select>
+
+        </div>
+
+        <div
+            id="mapping-status"
+            class="status"
+        >
+            Mapping non enregistré.
+        </div>
+
+        <div class="actions">
+
+            <button
+                id="suggest-button"
+                type="button"
+            >
+                Refaire la proposition automatique
+            </button>
+
+            <button
+                id="draft-button"
+                type="button"
+            >
+                Sauvegarder le brouillon
+            </button>
+
+            <button
+                id="validate-button"
+                type="button"
+                class="primary"
+            >
+                Valider le mapping
+            </button>
+
+        </div>
+
+    </section>
+</main>
+
+
+<script>
+
+const SESSION_ID =
+    {{ session_id | tojson }};
+
+const sourceSelect =
+    document.getElementById(
+        "source-select"
+    );
+
+const sheetSelect =
+    document.getElementById(
+        "sheet-select"
+    );
+
+const sourceStatus =
+    document.getElementById(
+        "source-status"
+    );
+
+const mappingSection =
+    document.getElementById(
+        "mapping-section"
+    );
+
+const diagnosticSection =
+    document.getElementById(
+        "diagnostic-section"
+    );
+
+const diagnosticBody =
+    document.getElementById(
+        "diagnostic-body"
+    );
+
+const mappingStatus =
+    document.getElementById(
+        "mapping-status"
+    );
+
+const suggestButton =
+    document.getElementById(
+        "suggest-button"
+    );
+
+const draftButton =
+    document.getElementById(
+        "draft-button"
+    );
+
+const validateButton =
+    document.getElementById(
+        "validate-button"
+    );
+
+const compatibilitySection =
+    document.getElementById(
+        "compatibility-section"
+    );
+
+const compatibilityStatus =
+    document.getElementById(
+        "compatibility-status"
+    );
+
+const compatibilityBody =
+    document.getElementById(
+        "compatibility-body"
+    );
+
+const roleSelects = {
+    Xg: document.getElementById(
+        "role-Xg"
+    ),
+    Xt: document.getElementById(
+        "role-Xt"
+    ),
+    Xh: document.getElementById(
+        "role-Xh"
+    ),
+    Y: document.getElementById(
+        "role-Y"
+    ),
+    A: document.getElementById(
+        "role-A"
+    ),
+};
+
+let currentColumns = [];
+let currentSourceId = null;
+let currentSheetName = null;
+let compatibilityRequestId = 0;
+
+
+function setStatus(
+    element,
+    text,
+    kind = ""
+) {
+    element.className =
+        "status"
+        + (
+            kind
+            ? " " + kind
+            : ""
+        );
+
+    element.textContent = text;
+}
+
+
+async function apiJson(
+    url,
+    options = {}
+) {
+    const response = await fetch(
+        url,
+        options
+    );
+
+    let payload = null;
+
+    try {
+        payload = await response.json();
+    } catch (_) {
+        payload = null;
+    }
+
+    if (!response.ok) {
+        const detail = payload?.detail;
+        const message =
+            typeof detail === "string"
+            ? detail
+            : detail?.message
+              || "Erreur HTTP " + response.status;
+        const error = new Error(message);
+        error.detail = detail;
+        throw error;
+    }
+
+    return payload;
+}
+
+
+function previewUrl() {
+
+    let url =
+        "/api/sessions/"
+        + encodeURIComponent(
+            SESSION_ID
+        )
+        + "/sources/"
+        + encodeURIComponent(
+            currentSourceId
+        )
+        + "/preview";
+
+    if (currentSheetName) {
+        url +=
+            "?sheet="
+            + encodeURIComponent(
+                currentSheetName
+            );
+    }
+
+    return url;
+}
+
+
+function mappingApiUrl() {
+    return (
+        "/api/sessions/"
+        + encodeURIComponent(
+            SESSION_ID
+        )
+        + "/mapping"
+    );
+}
+
+
+function compatibilityApiUrl() {
+    return mappingApiUrl() + "/compatibility";
+}
+
+
+function currentMapping() {
+    return {
+        roles: currentRoles(),
+        source_id: currentSourceId,
+        sheet_name: currentSheetName,
+    };
+}
+
+
+function fillRoleSelects(
+    columns
+) {
+    for (
+        const select
+        of Object.values(
+            roleSelects
+        )
+    ) {
+        select.innerHTML = "";
+
+        const none =
+            document.createElement(
+                "option"
+            );
+
+        none.value = "";
+        none.textContent =
+            "— non affecté —";
+
+        select.appendChild(
+            none
+        );
+
+        for (
+            const column
+            of columns
+        ) {
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value = column;
+            option.textContent = column;
+
+            select.appendChild(
+                option
+            );
+        }
+    }
+}
+
+
+function currentRoles() {
+
+    const roles = {};
+
+    for (
+        const [role, select]
+        of Object.entries(
+            roleSelects
+        )
+    ) {
+        if (select.value) {
+            roles[role] =
+                select.value;
+        }
+    }
+
+    return roles;
+}
+
+
+function applyRoles(
+    roles
+) {
+    for (
+        const [role, select]
+        of Object.entries(
+            roleSelects
+        )
+    ) {
+        select.value =
+            roles?.[role]
+            || "";
+    }
+}
+
+
+function duplicateColumns() {
+
+    const values =
+        Object.values(
+            roleSelects
+        )
+        .map(
+            select => select.value
+        )
+        .filter(Boolean);
+
+    const duplicates =
+        values.filter(
+            (
+                value,
+                index,
+                array
+            ) =>
+                array.indexOf(
+                    value
+                ) !== index
+        );
+
+    return [
+        ...new Set(
+            duplicates
+        )
+    ];
+}
+
+
+function localMappingCheck() {
+
+    const roles =
+        currentRoles();
+
+    if (!roles.Xg) {
+        return {
+            ok: false,
+            message:
+                "Le Couple Global "
+                + "doit être affecté.",
+        };
+    }
+
+    if (!roles.Y) {
+        return {
+            ok: false,
+            message:
+                "La Tension doit "
+                + "être affectée.",
+        };
+    }
+
+    const fineCount =
+        ["Xg", "Xt", "Xh"]
+        .filter(
+            role => roles[role]
+        )
+        .length;
+
+    if (
+        fineCount !== 1
+        && fineCount !== 3
+    ) {
+        return {
+            ok: false,
+            message:
+                "Le mode fin nécessite "
+                + "Couple Global, "
+                + "Couple Filet et "
+                + "Couple Sous-Tête.",
+        };
+    }
+
+    const duplicates =
+        duplicateColumns();
+
+    if (duplicates.length) {
+        return {
+            ok: false,
+            message:
+                "Une même colonne "
+                + "ne peut pas être "
+                + "affectée à plusieurs "
+                + "grandeurs.",
+        };
+    }
+
+    return {
+        ok: true,
+        message:
+            (
+                fineCount === 3
+                ? "Mapping fin prêt."
+                : "Mapping global prêt."
+            ),
+    };
+}
+
+
+function invalidateCompatibility() {
+    compatibilityRequestId += 1;
+    validateButton.disabled = true;
+    compatibilityBody.innerHTML = "";
+    compatibilitySection.classList.remove("hidden");
+
+    setStatus(
+        compatibilityStatus,
+        "En attente d'un mapping local valide.",
+        "warning"
+    );
+}
+
+
+function renderCompatibility(report) {
+    compatibilityBody.innerHTML = "";
+
+    for (const item of report.sources || []) {
+        const row = document.createElement("tr");
+
+        row.innerHTML =
+            "<td></td><td></td><td></td><td></td>";
+
+        row.children[0].textContent =
+            item.source_name || item.source_id;
+
+        const location = [];
+
+        if (item.sheet_name) {
+            location.push(item.sheet_name);
+        }
+
+        if (item.header_row_1based) {
+            location.push(
+                "en-tête ligne "
+                + item.header_row_1based
+            );
+        }
+
+        row.children[1].textContent =
+            location.join(" — ") || "—";
+
+        row.children[2].textContent =
+            item.compatible
+            ? "Compatible"
+            : "Incompatible";
+
+        row.children[3].textContent =
+            item.read_error
+            || (item.missing_columns || []).join(", ")
+            || "—";
+
+        compatibilityBody.appendChild(row);
+    }
+
+    if (report.all_compatible) {
+        setStatus(
+            compatibilityStatus,
+            "Campagne compatible : "
+            + report.compatible_count
+            + "/"
+            + report.total_sources
+            + " fichier(s).",
+            "ok"
+        );
+    } else {
+        setStatus(
+            compatibilityStatus,
+            "Incompatibilité des fichiers d'essai : validation bloquée — "
+            + report.incompatible_count
+            + " fichier(s) incompatible(s).",
+            "error"
+        );
+    }
+}
+
+
+async function checkCampaignCompatibility() {
+    const check = localMappingCheck();
+
+    if (!check.ok) {
+        invalidateCompatibility();
+        return null;
+    }
+
+    const mapping = currentMapping();
+    const requestId = ++compatibilityRequestId;
+
+    validateButton.disabled = true;
+
+    setStatus(
+        compatibilityStatus,
+        "Contrôle de tous les fichiers..."
+    );
+
+    try {
+        const payload = await apiJson(
+            compatibilityApiUrl(),
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    mapping: mapping,
+                }),
+            }
+        );
+
+        if (requestId !== compatibilityRequestId) {
+            return null;
+        }
+
+        const report = payload.report;
+
+        renderCompatibility(report);
+
+        validateButton.disabled =
+            !report.all_compatible;
+
+        return report;
+
+    } catch (error) {
+        if (requestId !== compatibilityRequestId) {
+            return null;
+        }
+
+        const report = error.detail?.report;
+
+        if (report) {
+            renderCompatibility(report);
+        } else {
+            setStatus(
+                compatibilityStatus,
+                error.message,
+                "error"
+            );
+        }
+
+        validateButton.disabled = true;
+
+        return null;
+
+    }
+}
+
+
+async function refreshLocalStatus() {
+
+    const check =
+        localMappingCheck();
+
+    setStatus(
+        mappingStatus,
+        check.message,
+        check.ok
+            ? "ok"
+            : "warning"
+    );
+
+    invalidateCompatibility();
+
+    if (check.ok) {
+        await checkCampaignCompatibility();
+    }
+}
+
+
+function renderDetections(
+    detections
+) {
+
+    diagnosticBody.innerHTML = "";
+
+    for (
+        const detection
+        of detections
+    ) {
+        const row =
+            document.createElement(
+                "tr"
+            );
+
+        const label =
+            detection.label
+            || "—";
+
+        let cssClass = "";
+
+        if (
+            detection.status
+            === "SUGGESTED"
+        ) {
+            cssClass = "suggested";
+        } else if (
+            detection.status
+            === "AMBIGUOUS"
+        ) {
+            cssClass = "ambiguous";
+        } else if (
+            detection.status
+            === "ROLE_CONFLICT"
+        ) {
+            cssClass = "conflict";
+        } else {
+            cssClass = "unrecognized";
+        }
+
+        row.innerHTML =
+            "<td></td>"
+            + "<td></td>"
+            + "<td></td>"
+            + "<td></td>";
+
+        row.children[0]
+            .textContent =
+                detection.column_name;
+
+        row.children[1]
+            .textContent =
+                label;
+
+        const pill =
+            document.createElement(
+                "span"
+            );
+
+        pill.className =
+            "pill " + cssClass;
+
+        pill.textContent =
+            detection.status;
+
+        row.children[2]
+            .appendChild(
+                pill
+            );
+
+        row.children[3]
+            .textContent =
+                String(
+                    detection.score
+                );
+
+        diagnosticBody
+            .appendChild(
+                row
+            );
+    }
+}
+
+
+async function loadPreview(
+    preserveSheet = false
+) {
+
+    if (!currentSourceId) {
+        return;
+    }
+
+    setStatus(
+        sourceStatus,
+        "Lecture de la source..."
+    );
+
+    try {
+        const payload =
+            await apiJson(
+                previewUrl()
+            );
+
+        const preview =
+            payload.preview;
+
+        currentColumns =
+            preview.columns
+            || [];
+
+        if (
+            !preserveSheet
+            && preview.selected_sheet
+        ) {
+            currentSheetName =
+                preview.selected_sheet;
+        }
+
+        sheetSelect.innerHTML = "";
+
+        const sheets =
+            preview.sheet_names
+            || [];
+
+        if (sheets.length) {
+
+            sheetSelect.disabled =
+                false;
+
+            for (
+                const sheet
+                of sheets
+            ) {
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value = sheet;
+                option.textContent = sheet;
+
+                if (
+                    sheet
+                    === preview.selected_sheet
+                ) {
+                    option.selected = true;
+                }
+
+                sheetSelect.appendChild(
+                    option
+                );
+            }
+
+            currentSheetName =
+                preview.selected_sheet;
+
+        } else {
+
+            sheetSelect.disabled =
+                true;
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value = "";
+            option.textContent =
+                "Non applicable";
+
+            sheetSelect.appendChild(
+                option
+            );
+
+            currentSheetName = null;
+        }
+
+        fillRoleSelects(
+            currentColumns
+        );
+
+        mappingSection
+            .classList.remove(
+                "hidden"
+            );
+
+        setStatus(
+            sourceStatus,
+            (
+                currentColumns.length
+                + " colonne(s) détectée(s)."
+            ),
+            "ok"
+        );
+
+        await suggestMapping();
+
+    } catch (error) {
+
+        currentColumns = [];
+
+        mappingSection
+            .classList.add(
+                "hidden"
+            );
+
+        diagnosticSection
+            .classList.add(
+                "hidden"
+            );
+
+        compatibilitySection
+            .classList.add(
+                "hidden"
+            );
+
+        setStatus(
+            sourceStatus,
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+async function suggestMapping() {
+
+    if (
+        !currentSourceId
+        || !currentColumns.length
+    ) {
+        return;
+    }
+
+    try {
+        const suggestion =
+            await apiJson(
+                mappingApiUrl()
+                + "/suggest",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        columns:
+                            currentColumns,
+                        source_id:
+                            currentSourceId,
+                        sheet_name:
+                            currentSheetName,
+                    }),
+                }
+            );
+
+        applyRoles(
+            suggestion.mapping.roles
+        );
+
+        renderDetections(
+            suggestion.detections
+            || []
+        );
+
+        diagnosticSection
+            .classList.remove(
+                "hidden"
+            );
+
+        await refreshLocalStatus();
+
+    } catch (error) {
+
+        setStatus(
+            mappingStatus,
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+async function saveMapping(
+    status
+) {
+
+    const mapping =
+        currentMapping();
+
+    try {
+        const payload =
+            await apiJson(
+                mappingApiUrl(),
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        mapping: mapping,
+                        status: status,
+                    }),
+                }
+            );
+
+        const stored =
+            payload.stored;
+
+        if (payload.compatibility) {
+            renderCompatibility(
+                payload.compatibility
+            );
+
+            validateButton.disabled =
+                !payload.compatibility
+                    .all_compatible;
+        }
+
+        if (
+            stored.status
+            === "VALIDATED"
+        ) {
+            setStatus(
+                mappingStatus,
+                "Mapping validé.",
+                "ok"
+            );
+        } else {
+            setStatus(
+                mappingStatus,
+                "Brouillon sauvegardé.",
+                "ok"
+            );
+        }
+
+        return true;
+
+    } catch (error) {
+
+        const report =
+            error.detail?.report;
+
+        if (report) {
+            renderCompatibility(report);
+            validateButton.disabled = true;
+        }
+
+        setStatus(
+            mappingStatus,
+            error.message,
+            "error"
+        );
+
+        return false;
+    }
+}
+
+
+async function restoreStoredMapping() {
+
+    try {
+        const payload =
+            await apiJson(
+                mappingApiUrl()
+            );
+
+        if (
+            !payload.exists
+            || !payload.stored
+        ) {
+            return;
+        }
+
+        const stored =
+            payload.stored;
+
+        const mapping =
+            stored.mapping;
+
+        if (
+            mapping.source_id
+            !== currentSourceId
+        ) {
+            return;
+        }
+
+        if (
+            (
+                mapping.sheet_name
+                || null
+            )
+            !== (
+                currentSheetName
+                || null
+            )
+        ) {
+            return;
+        }
+
+        applyRoles(
+            mapping.roles
+        );
+
+        await refreshLocalStatus();
+
+        if (
+            stored.status
+            === "VALIDATED"
+        ) {
+            setStatus(
+                mappingStatus,
+                "Mapping déjà validé.",
+                "ok"
+            );
+        } else {
+            setStatus(
+                mappingStatus,
+                "Brouillon restauré.",
+                "warning"
+            );
+        }
+
+    } catch (_) {
+        // Absence de mapping :
+        // la proposition automatique
+        // reste simplement affichée.
+    }
+}
+
+
+sourceSelect.addEventListener(
+    "change",
+    async () => {
+
+        currentSourceId =
+            sourceSelect.value
+            || null;
+
+        currentSheetName = null;
+
+        if (!currentSourceId) {
+
+            mappingSection
+                .classList.add(
+                    "hidden"
+                );
+
+            diagnosticSection
+                .classList.add(
+                    "hidden"
+                );
+
+            compatibilitySection
+                .classList.add(
+                    "hidden"
+                );
+
+            setStatus(
+                sourceStatus,
+                "Sélectionner un fichier d'essais."
+            );
+
+            return;
+        }
+
+        await loadPreview();
+
+        await restoreStoredMapping();
+    }
+);
+
+
+sheetSelect.addEventListener(
+    "change",
+    async () => {
+
+        currentSheetName =
+            sheetSelect.value
+            || null;
+
+        await loadPreview(
+            true
+        );
+
+        await restoreStoredMapping();
+    }
+);
+
+
+for (
+    const select
+    of Object.values(
+        roleSelects
+    )
+) {
+    select.addEventListener(
+        "change",
+        refreshLocalStatus
+    );
+}
+
+
+suggestButton.addEventListener(
+    "click",
+    suggestMapping
+);
+
+
+draftButton.addEventListener(
+    "click",
+    () => saveMapping(
+        "DRAFT"
+    )
+);
+
+
+validateButton.addEventListener(
+    "click",
+    async () => {
+
+        const check =
+            localMappingCheck();
+
+        if (!check.ok) {
+            setStatus(
+                mappingStatus,
+                check.message,
+                "error"
+            );
+            return;
+        }
+
+        const saved = await saveMapping(
+            "VALIDATED"
+        );
+
+        if (saved) {
+            window.location.assign(
+                `/sessions/${encodeURIComponent(SESSION_ID)}/diag`
+            );
+        }
+    }
+);
+
+
+validateButton.disabled = true;
+
+
+async function initializeMappingPage() {
+    const options = Array.from(sourceSelect.options).filter(
+        option => Boolean(option.value)
+    );
+
+    if (!options.length) {
+        setStatus(
+            sourceStatus,
+            "Aucun fichier d'essai disponible.",
+            "error"
+        );
+        return;
+    }
+
+    let sourceId = options[0].value;
+
+    try {
+        const payload = await apiJson(mappingApiUrl());
+        const storedSourceId = payload?.stored?.mapping?.source_id;
+        if (options.some(option => option.value === storedSourceId)) {
+            sourceId = storedSourceId;
+        }
+    } catch (_) {
+        // Sans mapping existant, le premier essai importé est la référence.
+    }
+
+    sourceSelect.value = sourceId;
+    currentSourceId = sourceId;
+    currentSheetName = null;
+    await loadPreview();
+    await restoreStoredMapping();
+}
+
+
+initializeMappingPage();
+
+</script>
+
+</body>
+</html>

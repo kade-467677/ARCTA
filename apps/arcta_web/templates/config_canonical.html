@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CONFIG canonique — ARCTA Web</title>
+<!-- 64G2: style commun chargé après les styles locaux -->
+    <style>
+        :root {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #18212b;
+        }
+        body { margin: 0; background: #f4f6f8; }
+        header { background: white; border-bottom: 1px solid #dce2e8; padding: 1rem 2rem; }
+        main { max-width: 1320px; margin: auto; padding: 1.5rem; }
+        h1 { margin: 0 0 .35rem; }
+        .subtitle { color: #5c6977; margin: 0 0 1.2rem; }
+        .workflow-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .workflow-nav a, .workflow-nav span {
+            padding: 8px 12px; border: 1px solid #aeb7c0; border-radius: 6px;
+            background: white; color: #20252b; text-decoration: none;
+        }
+        .workflow-nav .active { background: #24364b; border-color: #24364b; color: white; }
+        .workflow-nav .disabled { color: #8a949f; background: #eef1f4; cursor: not-allowed; }
+        .panel {
+            background: white; border: 1px solid #dce2e8; border-radius: 10px;
+            padding: 1.1rem; margin-bottom: 1rem;
+        }
+        .summary { display: flex; flex-wrap: wrap; gap: .6rem; }
+        .badge { padding: .35rem .7rem; border-radius: 999px; background: #eef2f6; }
+        .badge.ok { background: #e2f4e8; color: #155b2e; }
+        .badge.warn { background: #fff0ce; color: #745000; }
+        .badge.error { background: #fde3e3; color: #8a2020; }
+        .verdict-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+        .verdict { border: 1px solid #dce2e8; border-radius: 9px; padding: 1rem; }
+        .verdict.ok { border-color: #8ac49c; background: #f0faf3; }
+        .verdict.warn { border-color: #e4bd67; background: #fff9eb; }
+        .verdict h2 { font-size: 1rem; margin: 0 0 .45rem; }
+        .message, .warning {
+            padding: .8rem; border-radius: 8px; margin-bottom: .7rem;
+        }
+        .message { background: #e8f1fb; border: 1px solid #aec9e8; }
+        .warning { background: #fff4dd; border: 1px solid #f0d28b; }
+        .error-box { background: #fde9e9; border: 1px solid #d98f8f; padding: 1rem; border-radius: 8px; }
+        .toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: .8rem; align-items: end; }
+        label { display: block; font-size: .84rem; color: #4c5966; margin-bottom: .25rem; }
+        input, select, textarea {
+            box-sizing: border-box; width: 100%; padding: .52rem;
+            border: 1px solid #bcc6d0; border-radius: 6px; background: white;
+        }
+        textarea { min-height: 54px; resize: vertical; }
+        details { margin-bottom: .8rem; }
+        summary {
+            cursor: pointer; font-weight: 700; background: #f8fafb;
+            border: 1px solid #dce2e8; border-radius: 8px; padding: .75rem 1rem;
+        }
+        .field-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+            gap: .8rem; padding-top: .8rem;
+        }
+        .field-card { border: 1px solid #dce2e8; border-radius: 8px; padding: .9rem; background: white; }
+        .field-card.attention { border-left: 5px solid #d8951c; }
+        .field-card.calculated { background: #f5f7f9; }
+        .field-title { font-weight: 680; }
+        .field-id { color: #6d7884; font-size: .78rem; margin: .15rem 0 .55rem; }
+        .field-badges { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .55rem; }
+        .mini-badge { font-size: .72rem; border-radius: 999px; padding: .18rem .48rem; background: #edf1f5; }
+        .mini-badge.calc { background: #fde6c5; }
+        .mini-badge.id { background: #e7e1f8; }
+        .meta { color: #66727f; font-size: .8rem; line-height: 1.45; margin-top: .65rem; }
+        .missing-list { margin: .45rem 0 0; padding-left: 1.2rem; max-height: 130px; overflow: auto; }
+        .actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+        button {
+            padding: .65rem .95rem; border-radius: 6px; border: 1px solid #9ca8b3;
+            background: white; cursor: pointer;
+        }
+        button.primary { background: #263746; border-color: #263746; color: white; }
+        button:disabled { background: #aeb6bf; border-color: #aeb6bf; cursor: not-allowed; }
+        .bottom-actions { position: sticky; bottom: 0; box-shadow: 0 -3px 12px rgba(30, 45, 60, .08); }
+        .hidden-by-filter { display: none; }
+        @media (max-width: 760px) {
+            .verdict-grid, .toolbar { grid-template-columns: 1fr; }
+            main { padding: .8rem; }
+        }
+    </style>
+    <link rel="stylesheet" href="/static/arcta.css">
+</head>
+<body class="workflow-page">
+<main>
+    <nav class="workflow-nav" aria-label="Parcours campagne">
+        <a href="/">Accueil</a>
+        <a class="active" href="/sessions/{{ session.session_id }}/config">CONFIG</a>
+        {% if state.validated %}
+            <a href="/sessions/{{ session.session_id }}/mapping">Mapping</a>
+        {% else %}
+            <span class="disabled" title="Validez d'abord la CONFIG pour le calcul">Mapping</span>
+        {% endif %}
+        <span class="disabled">DIAG</span>
+        <span class="disabled">Exécution</span>
+    </nav>
+
+    <h1>Vérification des données d’entrée</h1>
+    <p class="subtitle">
+        Une seule CONFIG est partagée par tous les essais. Les champs nécessaires au calcul
+        sont distingués des métadonnées nécessaires à l’identification DABCTA.
+    </p>
+
+    <section class="panel">
+        <div class="summary">
+            <span class="badge">96 champs canoniques</span>
+            <span class="badge">Profil : <strong>{{ state.source_profile or "non reconnu" }}</strong></span>
+            <span class="badge">Workflow : <strong>{{ state.workflow_status }}</strong></span>
+            <span class="badge">Source : <strong>{{ state.source_original_name }}</strong></span>
+            <span class="badge">Mise à jour : {{ state.updated_at }}</span>
+        </div>
+    </section>
+
+    {% if message %}<div class="message">{{ message }}</div>{% endif %}
+    {% for warning in warnings %}<div class="warning">{{ warning }}</div>{% endfor %}
+
+    {% if not state.extracted %}
+        <section class="panel error-box">
+            <h2>Source CONFIG non reconnue</h2>
+            <p><strong>{{ state.error_code }}</strong> — {{ state.error_message }}</p>
+            <form method="post" action="/sessions/{{ session.session_id }}/config">
+                <button type="submit" name="action" value="reextract">Réessayer l’extraction</button>
+            </form>
+        </section>
+    {% else %}
+        <section class="verdict-grid">
+            <article class="verdict {{ 'ok' if validation.calculation_ready else 'warn' }}">
+                <h2>Calcul ARCTA / Kellermann &amp; Klein</h2>
+                {% if validation.calculation_ready %}
+                    <strong>Prêt pour le calcul</strong>
+                    <p>La CONFIG peut être validée et le Mapping devient accessible.</p>
+                {% else %}
+                    <strong>Calcul bloqué</strong>
+                    <p>
+                        {{ validation.missing_calculation|length }} champ(s) manquant(s) et
+                        {{ validation.ambiguous_calculation|length }} champ(s) ambigu(s).
+                    </p>
+                    <ul class="missing-list">
+                        {% for field_id in validation.missing_calculation %}<li>{{ field_labels[field_id] }} <small>({{ field_id }})</small></li>{% endfor %}
+                        {% for field_id in validation.ambiguous_calculation %}<li>{{ field_labels[field_id] }} <small>({{ field_id }})</small> — à confirmer</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </article>
+
+            <article class="verdict {{ 'ok' if validation.dabcta_identity_ready else 'warn' }}">
+                <h2>Identification DABCTA</h2>
+                {% if validation.dabcta_identity_ready %}
+                    <strong>Identification complète</strong>
+                    <p>Les métadonnées obligatoires d’identification sont disponibles.</p>
+                {% else %}
+                    <strong>Identification à compléter — non bloquante</strong>
+                    <p>
+                        {{ validation.missing_identity|length }} champ(s) manquant(s) et
+                        {{ validation.ambiguous_identity|length }} champ(s) ambigu(s).
+                    </p>
+                    <ul class="missing-list">
+                        {% for field_id in validation.missing_identity %}<li>{{ field_labels[field_id] }} <small>({{ field_id }})</small></li>{% endfor %}
+                        {% for field_id in validation.ambiguous_identity %}<li>{{ field_labels[field_id] }} <small>({{ field_id }})</small> — à confirmer</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="toolbar">
+                <div>
+                    <label for="field-filter">Rechercher un champ, une catégorie ou un identifiant</label>
+                    <input id="field-filter" type="search" placeholder="Ex. filetage, lubrifiant, PN vis…">
+                </div>
+                <label>
+                    <input id="attention-only" type="checkbox" style="width:auto">
+                    Afficher uniquement les champs à compléter
+                </label>
+            </div>
+        </section>
+
+        <form method="post" action="/sessions/{{ session.session_id }}/config" id="canonical-form">
+            {% for category in categories %}
+                <details {% if category.open %}open{% endif %} data-category="{{ category.name|lower }}">
+                    <summary>{{ category.name }} — {{ category.fields|length }} champ(s)</summary>
+                    <div class="field-grid">
+                        {% for item in category.fields %}
+                            <article
+                                class="field-card{% if item.requires_attention %} attention{% endif %}{% if not item.editable %} calculated{% endif %}"
+                                data-search="{{ (item.spec.label ~ ' ' ~ item.spec.field_id ~ ' ' ~ item.spec.category)|lower }}"
+                                data-attention="{{ 'true' if item.requires_attention else 'false' }}"
+                            >
+                                <div class="field-title">{{ item.spec.label }}</div>
+                                <div class="field-id">{{ item.spec.field_id }}</div>
+                                <div class="field-badges">
+                                    <span class="mini-badge {% if item.spec.requirement == 'OBLIGATOIRE_CALCUL' %}calc{% elif item.spec.requirement == 'OBLIGATOIRE_ID' %}id{% endif %}">
+                                        {{ requirement_labels[item.spec.requirement] }}
+                                    </span>
+                                    <span class="mini-badge">{{ status_labels[item.field.status] }}</span>
+                                </div>
+
+                                <label for="value__{{ item.spec.field_id }}">
+                                    Valeur{% if item.field.unit %} ({{ item.field.unit }}){% endif %}
+                                </label>
+
+                                {% if item.spec.value_type == 'bool' and item.editable %}
+                                    <select id="value__{{ item.spec.field_id }}" name="value__{{ item.spec.field_id }}">
+                                        <option value="" {% if item.field.value is none %}selected{% endif %}>— non renseigné —</option>
+                                        <option value="true" {% if item.field.value is sameas true %}selected{% endif %}>Oui</option>
+                                        <option value="false" {% if item.field.value is sameas false %}selected{% endif %}>Non</option>
+                                    </select>
+                                {% else %}
+                                    <input
+                                        id="value__{{ item.spec.field_id }}"
+                                        name="value__{{ item.spec.field_id }}"
+                                        type="{% if item.spec.value_type == 'date' %}date{% else %}text{% endif %}"
+                                        value="{{ item.display_value }}"
+                                        {% if not item.editable %}readonly{% endif %}
+                                    >
+                                {% endif %}
+
+                                {% if item.editable %}
+                                    <label for="message__{{ item.spec.field_id }}">Commentaire</label>
+                                    <textarea id="message__{{ item.spec.field_id }}" name="message__{{ item.spec.field_id }}">{{ item.field.message }}</textarea>
+                                {% endif %}
+
+                                <div class="meta">
+                                    {% if item.source_reference %}
+                                        Source : {{ item.source_reference }}<br>
+                                    {% else %}
+                                        Source : saisie à compléter<br>
+                                    {% endif %}
+                                    {% if item.field.raw_value is not none %}
+                                        Valeur source brute : {{ item.field.raw_value }}<br>
+                                    {% endif %}
+                                    {% if item.field.transformation %}
+                                        Transformation : {{ item.field.transformation }}
+                                    {% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endfor %}
+
+            <section class="panel bottom-actions">
+                <div class="actions">
+                    <button type="submit" name="action" value="reextract">
+                        Réextraire depuis la source
+                    </button>
+                    <button type="submit" name="action" value="save_draft">
+                        Enregistrer le brouillon
+                    </button>
+                    <button
+                        class="primary"
+                        type="submit"
+                        name="action"
+                        value="validate"
+                        {% if not validation.calculation_ready %}disabled{% endif %}
+                    >
+                        Valider la CONFIG et passer au Mapping
+                    </button>
+                </div>
+                <p class="meta">
+                    La complétude DABCTA est affichée séparément et ne bloque pas le calcul ARCTA.
+                </p>
+            </section>
+        </form>
+    {% endif %}
+    {% with session_id=session.session_id %}
+        <!-- Paramètres statistiques : page Exécution, jalon 64G1. -->
+    {% endwith %}
+</main>
+
+<script>
+const filterInput = document.getElementById("field-filter");
+const attentionOnly = document.getElementById("attention-only");
+
+function refreshFieldFilter() {
+    if (!filterInput || !attentionOnly) return;
+    const query = filterInput.value.trim().toLocaleLowerCase("fr");
+    for (const card of document.querySelectorAll(".field-card")) {
+        const matchesText = !query || card.dataset.search.includes(query);
+        const matchesAttention = !attentionOnly.checked || card.dataset.attention === "true";
+        card.classList.toggle("hidden-by-filter", !(matchesText && matchesAttention));
+    }
+    for (const section of document.querySelectorAll("details[data-category]")) {
+        const visible = section.querySelectorAll(".field-card:not(.hidden-by-filter)").length;
+        section.classList.toggle("hidden-by-filter", visible === 0);
+        if (query && visible) section.open = true;
+    }
+}
+
+if (filterInput) filterInput.addEventListener("input", refreshFieldFilter);
+if (attentionOnly) attentionOnly.addEventListener("change", refreshFieldFilter);
+</script>
+
+</body>
+</html>
